@@ -50,6 +50,15 @@ jobs:
         run: npm run build # <-- ¡VITAL! Asegúrate de que este sea tu script de build.
                           # (Podría ser 'npm run build:prod' o similar)
 
+      # 4.1 (DEBUG) Listar el contenido de la carpeta generada
+      # Esto ayuda a depurar despliegues donde index.html se sube pero los assets faltan.
+      - name: List dist contents (debug)
+        run: |
+          echo "-- dist tree --"
+          ls -laR dist || true
+          echo "\n-- dist/index.html --"
+          sed -n '1,200p' dist/index.html || true
+
       # 5. Subir el artefacto
       # Sube los archivos estáticos (de la carpeta 'dist') para que
       # el trabajo 'deploy' pueda usarlos.
