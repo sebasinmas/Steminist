@@ -1,0 +1,81 @@
+# Nombre del workflow
+name: Deploy Prototipo React (Node.js) to GitHub Pages
+
+# Disparador (Trigger)
+# Se ejecuta cada vez que haces 'push' a la rama 'main'
+on:
+  push:
+    branches:
+      - main  # <-- Cambia 'main' si tu rama principal es otra
+
+# Permisos
+# Se necesitan para que la acción pueda escribir en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Trabajos (Jobs)
+jobs:
+  # --- TRABAJO 1: Construir la Aplicación ---
+  build:
+    runs-on: ubuntu-latest  # Usar una máquina virtual de Ubuntu
+    
+    steps:
+      # 1. Clonar el repositorio
+      # Trae tu código a la máquina virtual
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configurar Node.js
+      # (¡Este es el paso clave que faltaba!)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # <-- Puedes usar '18' o '20'
+          cache: 'npm'       # Habilitar caché para 'npm'
+
+      # 3. Instalar dependencias
+      # (Si usas 'yarn', cambia esto a 'yarn install')
+      - name: Install dependencies
+        run: npm ci  # 'npm ci' es más rápido y seguro para pipelines que 'npm install'
+
+      # 4. Construir (Renderizar) la App
+      # Ejecuta el script de "build" de tu package.json
+      - name: Build application
+        run: npm run build # <-- ¡VITAL! Asegúrate de que este sea tu script de build.
+
+      # 5. Subir el artefacto
+      # Sube los archivos estáticos (de la carpeta 'dist') para que
+      # el trabajo 'deploy' pueda usarlos.
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # ¡VITAL! Esta debe ser la carpeta que genera tu 'npm run build'.
+          # Las comunes son 'dist', 'build', 'out'.
+          path: './dist' # <-- CAMBIA ESTO si tu app genera la build en otra carpeta
+
+  # --- TRABAJO 2: Desplegar en GitHub Pages ---
+  deploy:
+    # 'needs: build' asegura que este trabajo solo se ejecute si 'build' terminó bien
+    needs: build
+    
+    # Permisos específicos para este trabajo
+    permissions:
+      pages: write      # Para escribir en GitHub Pages
+      id-token: write   # Para autenticarse
+      
+    # Configuración del entorno de despliegue
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }} # Guardará la URL del sitio
+      
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. El paso de despliegue
+      # Esta acción toma el artefacto subido por 'build'
+      # y lo publica en GitHub Pages.
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
