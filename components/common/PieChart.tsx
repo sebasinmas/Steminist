@@ -1,81 +1,78 @@
 import React from 'react';
 
-interface PieChartData {
-    name: string;
-    value: number;
-    color: string;
-}
-
 interface PieChartProps {
+    data: { label: string; value: number; color: string }[];
     title: string;
-    data: PieChartData[];
 }
 
-const PieChart: React.FC<PieChartProps> = ({ title, data }) => {
-    const total = data.reduce((acc, item) => acc + item.value, 0);
+const getCoordinatesForPercent = (percent: number) => {
+    const x = Math.cos(2 * Math.PI * percent);
+    const y = Math.sin(2 * Math.PI * percent);
+    return [x, y];
+};
 
+const PieChart: React.FC<PieChartProps> = ({ data, title }) => {
+    const total = data.reduce((acc, item) => acc + item.value, 0);
     if (total === 0) {
         return (
-             <div className="bg-secondary/30 p-4 rounded-lg h-full flex flex-col">
-                <h3 className="text-lg font-semibold mb-4 text-center">{title}</h3>
-                <div className="flex-grow flex items-center justify-center">
-                    <p className="text-muted-foreground">No hay datos disponibles.</p>
-                </div>
+            <div className="bg-card border border-border rounded-lg shadow-sm p-6 flex flex-col items-center justify-center h-full min-h-[300px]">
+                <h3 className="text-lg font-bold mb-4 text-center">{title}</h3>
+                <p className="text-muted-foreground">No hay datos disponibles.</p>
             </div>
         );
     }
     
-    const radius = 50;
-    const circumference = 2 * Math.PI * radius;
-    
-    // By reversing the data and drawing cumulative segments, we ensure smaller segments
-    // are drawn on top of larger ones, creating a solid circle with no gaps.
-    const reversedData = [...data].reverse();
-    let cumulativeValue = 0;
+    let cumulativePercent = 0;
 
     return (
-        <div className="bg-secondary/30 p-4 rounded-lg flex flex-col">
-            <h3 className="text-lg font-semibold mb-4 text-center">{title}</h3>
-            <div className="relative w-40 h-40 sm:w-48 sm:h-48 mx-auto">
-                <svg viewBox="0 0 120 120" className="transform -rotate-90">
-                    {reversedData.map((item) => {
-                        cumulativeValue += item.value;
-                        const dasharray = (cumulativeValue / total) * circumference;
+        <div className="bg-card border border-border rounded-lg shadow-sm p-6 flex flex-col h-full">
+            <h3 className="text-lg font-bold mb-4 text-center">{title}</h3>
+            <div className="flex flex-col items-center justify-center flex-grow gap-6">
+                <div className="relative w-40 h-40">
+                    <svg viewBox="-1 -1 2 2" style={{ transform: 'rotate(-90deg)' }}>
+                        {data.map((item, index) => {
+                            const percent = item.value / total;
+                            // This ensures that small slices are still visible and don't create artifacts
+                            const adjustedPercent = Math.max(percent, 0.00001);
+                            const [startX, startY] = getCoordinatesForPercent(cumulativePercent);
+                            cumulativePercent += adjustedPercent;
+                            // Ensure the circle closes perfectly
+                            if (index === data.length - 1) {
+                                cumulativePercent = 1;
+                            }
+                            const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+                            const largeArcFlag = adjustedPercent > 0.5 ? 1 : 0;
 
-                        return (
-                            <circle
-                                key={item.name}
-                                r={radius}
-                                cx="60"
-                                cy="60"
-                                fill="transparent"
-                                stroke={item.color}
-                                strokeWidth="20"
-                                strokeDasharray={`${dasharray} ${circumference}`}
-                                className="transition-all duration-500"
-                            />
-                        );
-                    })}
-                </svg>
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-foreground">{total}</span>
+                            const pathData = [
+                                `M ${startX} ${startY}`,
+                                `A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+                                `L 0 0`,
+                            ].join(' ');
+
+                            return <path key={index} d={pathData} fill={item.color} />;
+                        })}
+                    </svg>
+                     <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-card w-24 h-24 rounded-full flex items-center justify-center flex-col">
+                           <span className="text-2xl font-bold">{total}</span>
+                           <span className="text-xs text-muted-foreground">Total</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-border/50">
-                <ul className="space-y-2 text-sm">
+                <div className="flex flex-col space-y-2 w-full">
                     {data.map((item, index) => (
-                        <li key={index} className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <span
-                                    className="w-3 h-3 rounded-full mr-2"
-                                    style={{ backgroundColor: item.color }}
-                                ></span>
-                                <span className="text-muted-foreground">{item.name}</span>
+                         <div key={index} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center truncate">
+                                <span className="w-3 h-3 rounded-sm mr-2 flex-shrink-0" style={{ backgroundColor: item.color }}></span>
+                                <span className="font-medium truncate mr-2">{item.label}</span>
                             </div>
-                            <span className="font-semibold text-foreground">{item.value}</span>
-                        </li>
+                            <span className="font-bold text-right">
+                                {item.value} 
+                                <span className="text-xs text-muted-foreground ml-1">({(item.value / total * 100).toFixed(0)}%)</span>
+                            </span>
+                        </div>
                     ))}
-                </ul>
+                </div>
             </div>
         </div>
     );

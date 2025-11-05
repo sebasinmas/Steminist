@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Mentorship, Mentor } from '../../types';
 import PieChart from '../common/PieChart';
-import Card from '../common/Card';
 
 interface AnalyticsChartsProps {
     mentorships: Mentorship[];
@@ -28,7 +27,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ mentorships, mentors,
             { name: 'Terminación Solicitada', value: statusCounts['Terminación Solicitada'] || 0 }
         ]
         .filter(d => d.value > 0)
-        .map((d, i) => ({ ...d, color: chartColors[i % chartColors.length] }));
+        .map(({ name, value }, i) => ({ label: name, value, color: chartColors[i % chartColors.length] }));
     }, [mentorships]);
 
     const mentorCapacityData = useMemo(() => {
@@ -49,28 +48,28 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ mentorships, mentors,
              { name: 'Totalmente Disponibles', value: capacityCounts.available }
         ]
         .filter(d => d.value > 0)
-        .map((d, i) => ({ ...d, color: chartColors[i % chartColors.length] }));
+        .map(({ name, value }, i) => ({ label: name, value, color: chartColors[i % chartColors.length] }));
     }, [mentors, mentorMenteesCount]);
 
     const menteeGoalsData = useMemo(() => {
         return Object.entries(menteeGoalsDistribution)
             .sort(([, a], [, b]) => b - a)
             .map(([name, value], index) => ({
-                name,
+                label: name,
                 value,
                 color: chartColors[index % chartColors.length]
             }));
     }, [menteeGoalsDistribution]);
 
     return (
-        <Card>
+        <div>
             <h2 className="text-2xl font-bold mb-6 text-center">Análisis de la Plataforma</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <PieChart title="Estado de Mentorías" data={mentorshipStatusData} />
                 <PieChart title="Capacidad de Mentoras" data={mentorCapacityData} />
                 <PieChart title="Objetivos de Mentoreadas" data={menteeGoalsData} />
             </div>
-        </Card>
+        </div>
     );
 };
 
