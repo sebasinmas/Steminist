@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* Light Theme Tokens */
+    --background-light: 248 250 252;
+    /* gray-50 */
+    --foreground-light: 2 6 23;
+    /* gray-950 */
+    --card-light: 255 255 255;
+    /* white */
+    --popover-light: 255 255 255;
+    /* white */
+    --primary-light: 59 130 246;
+    /* blue-500 */
+    --primary-foreground-light: 248 250 252;
+    /* gray-50 */
+    --secondary-light: 241 245 249;
+    /* gray-100 */
+    --secondary-foreground-light: 15 23 42;
+    /* gray-900 */
+    --muted-light: 100 116 139;
+    /* gray-500 */
+    --muted-foreground-light: 100 116 139;
+    /* gray-500 */
+    --accent-light: 241 245 249;
+    /* gray-100 */
+    --accent-foreground-light: 15 23 42;
+    /* gray-900 */
+    --destructive-light: 220 38 38;
+    /* red-600 */
+    --destructive-foreground-light: 248 250 252;
+    /* gray-50 */
+    --border-light: 226 232 240;
+    /* gray-200 */
+    --input-light: 226 232 240;
+    /* gray-200 */
+    --ring-light: 37 99 235;
+    /* blue-600 */
+    --cyan-light: 6 182 212;
+    /* cyan-500 */
+    --magenta-light: 219 39 119;
+    /* pink-600 */
+    --lilac-light: 167 139 250;
+    /* violet-400 */
+
+    /* Dark Theme Tokens */
+    --background-dark: 15 23 42;
+    /* gray-900 */
+    --foreground-dark: 248 250 252;
+    /* gray-50 */
+    --card-dark: 30 41 59;
+    /* gray-800 */
+    --popover-dark: 15 23 42;
+    /* gray-900 */
+    --primary-dark: 96 165 250;
+    /* blue-400 */
+    --primary-foreground-dark: 15 23 42;
+    /* gray-900 */
+    --secondary-dark: 51 65 85;
+    /* gray-700 */
+    --secondary-foreground-dark: 248 250 252;
+    /* gray-50 */
+    --muted-dark: 100 116 139;
+    /* gray-500 */
+    --muted-foreground-dark: 100 116 139;
+    /* gray-500 */
+    --accent-dark: 51 65 85;
+    /* gray-700 */
+    --accent-foreground-dark: 248 250 252;
+    /* gray-50 */
+    --destructive-dark: 185 28 28;
+    /* red-700 */
+    --destructive-foreground-dark: 248 250 252;
+    /* gray-50 */
+    --border-dark: 51 65 85;
+    /* gray-700 */
+    --input-dark: 51 65 85;
+    /* gray-700 */
+    --ring-dark: 96 165 250;
+    /* blue-400 */
+    --cyan-dark: 34 211 238;
+    /* cyan-400 */
+    --magenta-dark: 236 72 153;
+    /* pink-500 */
+    --lilac-dark: 196 181 253;
+    /* violet-300 */
+}
+
+/* Set default theme to light */
+:root {
+    --background: var(--background-light);
+    --foreground: var(--foreground-light);
+    --card: var(--card-light);
+    --popover: var(--popover-light);
+    --primary: var(--primary-light);
+    --primary-foreground: var(--primary-foreground-light);
+    --secondary: var(--secondary-light);
+    --secondary-foreground: var(--secondary-foreground-light);
+    --muted: var(--muted-light);
+    --muted-foreground: var(--muted-foreground-light);
+    --accent: var(--accent-light);
+    --accent-foreground: var(--accent-foreground-light);
+    --destructive: var(--destructive-light);
+    --destructive-foreground: var(--destructive-foreground-light);
+    --border: var(--border-light);
+    --input: var(--input-light);
+    --ring: var(--ring-light);
+    --cyan: var(--cyan-light);
+    --magenta: var(--magenta-light);
+    --lilac: var(--lilac-light);
+}
+
+.dark {
+    --background: var(--background-dark);
+    --foreground: var(--foreground-dark);
+    --card: var(--card-dark);
+    --popover: var(--popover-dark);
+    --primary: var(--primary-dark);
+    --primary-foreground: var(--primary-foreground-dark);
+    --secondary: var(--secondary-dark);
+    --secondary-foreground: var(--secondary-foreground-dark);
+    --muted: var(--muted-dark);
+    --muted-foreground: var(--muted-foreground-dark);
+    --accent: var(--accent-dark);
+    --accent-foreground: var(--accent-foreground-dark);
+    --destructive: var(--destructive-dark);
+    --destructive-foreground: var(--destructive-foreground-dark);
+    --border: var(--border-dark);
+    --input: var(--input-dark);
+    --ring: var(--ring-dark);
+    --cyan: var(--cyan-dark);
+    --magenta: var(--magenta-dark);
+    --lilac: var(--lilac-dark);
+}
+
+body {
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background-image: radial-gradient(rgb(var(--muted) / 0.1) 0.5px, transparent 0.5px);
+    background-size: 15px 15px;
+    background-position: -5px -5px;
+    transition: background-image 0.3s ease-in-out;
+}
+
+.dark body::before {
+    background-image: radial-gradient(rgb(var(--muted) / 0.1) 0.5px, transparent 0.5px);
+}
+
+/* Hide scrollbar for elements with this class */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
