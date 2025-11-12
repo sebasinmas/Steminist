@@ -1,20 +1,20 @@
 import React, { useState, useCallback, useEffect } from 'react';
 // FIX: Corrected import paths to ensure modules are found.
-import { Page, UserRole, Theme, ConnectionStatus } from './types.js';
+import { Page, UserRole, Theme, ConnectionStatus } from '../types.js';
 // FIX: Corrected import paths to ensure modules are found.
-import type { Mentor, Session, ConnectionRequest, Mentee, Mentorship, MentorSurvey, Attachment } from './types.js';
+import type { Mentor, Session, ConnectionRequest, Mentee, Mentorship, MentorSurvey, Attachment } from '../types.js';
 // FIX: Corrected import paths to ensure modules are found.
-import { mockMentors, mockCurrentUserMentee, mockConnectionRequests, mockCurrentMentor, mockMentorships, mockPendingSessions } from './data/mockData.js';
-import Header from './components/layout/Header';
-import LandingPage from './pages/LandingPage';
-import DashboardPage from './pages/DashboardPage';
+import { mockMentors, mockCurrentUserMentee, mockConnectionRequests, mockCurrentMentor, mockMentorships, mockPendingSessions } from '@/src/data/mockData.js';
+import Header from '@/src/components/layout/Header.js';
+import LandingPage from '@/src/pages/LandingPage.js';
+import DashboardPage from '@/src/pages/DashboardPage.js';
 // FIX: Corrected import paths to ensure modules are found.
-import MentorSearchPage from './pages/MentorSearchPage.js';
-import MentorProfilePage from './pages/MentorProfilePage';
-import NotificationsPage from './pages/NotificationsPage';
-import ProfilePage from './pages/ProfilePage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import { ToastProvider } from './context/ToastContext';
+import MentorSearchPage from '@/src/pages/MentorSearchPage.js';
+import MentorProfilePage from '@/src/pages/MentorProfilePage.js';
+import NotificationsPage from '@/src/pages/NotificationsPage.js';
+import ProfilePage from '@/src/pages/ProfilePage.js';
+import AdminDashboardPage from '@/src/pages/AdminDashboardPage.js';
+import { ToastProvider } from '@/src/context/ToastContext.js';
 
 const App: React.FC = () => {
     const [page, setPage] = useState<Page>('landing');
