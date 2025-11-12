@@ -6,7 +6,7 @@ name: Deploy Prototipo React (Node.js) to GitHub Pages
 on:
   push:
     branches:
-      - main  # <-- Cambia 'main' si tu rama principal es otra
+      - prototipo  # <-- Cambia 'main' si tu rama principal es otra
 
 # Permisos
 # Se necesitan para que la acción pueda escribir en GitHub Pages
