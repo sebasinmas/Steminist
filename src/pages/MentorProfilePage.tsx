@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Mentor, Page, Session, ConnectionStatus } from '../types';
+import type { Mentor, Page, Session, ConnectionStatus } from '@/types/types';
 import Button from '../components/common/Button';
 import Tag from '../components/common/Tag';
 import ConnectionRequestModal from '../components/mentors/ConnectionRequestModal';

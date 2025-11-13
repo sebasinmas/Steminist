@@ -1,29 +1,29 @@
 # Nombre del workflow
-name: Deploy Prototipo React (Node.js) to GitHub Pages
+name: CI/CD Pipeline (Build y Deploy Prototipo + Main)
 
-# Disparador (Trigger)
-# Se ejecuta cada vez que haces 'push' a la rama 'main'
+# 1. TRIGGER ACTUALIZADO
 on:
   push:
     branches:
-      - prototipo  # <-- Cambia 'main' si tu rama principal es otra
+      - main       # <-- ¡AÑADIDO! Ahora también se activa en push a 'main'
+      - prototipo 
+  pull_request:
+    branches:
+      - main       # <-- Para las reglas de protección de rama
 
-# Permisos
-# Se necesitan para que la acción pueda escribir en GitHub Pages
+# Permisos globales
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  # Los permisos de 'pages' y 'id-token' se moverán
+  # a ser específicos de cada job para mayor seguridad.
 
 # Trabajos (Jobs)
 jobs:
-  # --- TRABAJO 1: Construir la Aplicación ---
+  # --- TRABAJO 1: CONSTRUIR (Se mantiene casi igual) ---
   build:
-    runs-on: ubuntu-latest  # Usar una máquina virtual de Ubuntu
-    
+    runs-on: ubuntu-latest
     steps:
-      
-      - name: Clonar repositorio a la VM de GitHub Actions
+      - name: Clonar repositorio
         uses: actions/checkout@v4
 
       - name: Instalar PNPM
@@ -31,53 +31,92 @@ jobs:
         with:
           version: latest
 
-      - name: Configura Node.js e instala PNPM
+      - name: Configura Node.js y activa el caché de PNPM
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'       # Habilitar caché para 'pnpm' pero puedes cambiarlo a 'npm' o 'yarn'
+          cache: 'pnpm'
 
-      # 3. Instalar dependencias
-      # (Si usas 'yarn', cambia esto a 'yarn install')
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 4. Construir (Renderizar) la App
-      # Ejecuta el script de "build" de tu package.json
       - name: Build application
-        run: pnpm run build # <-- ¡VITAL! Asegúrate de que este sea tu script de build.
+        run: pnpm run build
 
-      # 5. Subir el artefacto
-      # Sube los archivos estáticos (de la carpeta 'dist') para que
-      # el trabajo 'deploy' pueda usarlos.
+      # --- CAMBIO IMPORTANTE ---
+      # Sube un artefacto genérico que CUALQUIER job pueda descargar
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          # ¡VITAL! Esta debe ser la carpeta que genera tu 'npm run build'.
-          # Las comunes son 'dist', 'build', 'out'.
-          path: './dist' # <-- CAMBIA ESTO si tu app genera la build en otra carpeta
+          name: build-artifact # Un nombre genérico
+          path: ./dist # La carpeta que generó el build
 
-  # --- TRABAJO 2: Desplegar en GitHub Pages ---
-  deploy:
-    # 'needs: build' asegura que este trabajo solo se ejecute si 'build' terminó bien
-    needs: build
+  # --- TRABAJO 2: DESPLEGAR A GITHUB PAGES (Prototipo) ---
+  deploy-github-pages:
+    needs: build # Depende del job 'build'
     
-    # Permisos específicos para este trabajo
+    # Condición: Solo corre en push a 'prototipo'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prototipo'
+    
+    # Permisos específicos para este job
     permissions:
-      pages: write      # Para escribir en GitHub Pages
-      id-token: write   # Para autenticarse
+      pages: write 
+      id-token: write
       
-    # Configuración del entorno de despliegue
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # Guardará la URL del sitio
+      url: ${{ steps.deployment.outputs.page_url }}
       
     runs-on: ubuntu-latest
-    
     steps:
-      # 1. El paso de despliegue
-      # Esta acción toma el artefacto subido por 'build'
-      # y lo publica en GitHub Pages.
+      # 1. Descarga el artefacto genérico
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: ./dist # Lo descarga en una carpeta 'dist'
+
+      # 2. Sube el artefacto en el formato especial de "Pages"
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      # 3. Despliega en Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # --- TRABAJO 3: DESPLEGAR A PRODUCCIÓN (Main) ---
+  deploy-production:
+    needs: build # También depende del job 'build'
+
+    # Condición: Solo corre en push a 'main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # ¡AQUÍ! Usa el entorno 'production' que creaste
+    environment:
+      name: Production 
+      
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llegamos a producción
+        run: echo "Desplegando a producción..."
+      # # 1. Descarga el MISMO artefacto genérico
+      # - name: Download build artifact
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: build-artifact
+      #     path: ./dist # Lo descarga en una carpeta 'dist'
+
+      # # 2. ¡Tu script de despliegue! (Ejemplo con SCP)
+      # # Reemplaza esto con tu acción de FTP, SCP, SSH, etc.
+      # - name: Deploy to Production Hosting (Ejemplo SCP)
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.HOSTING_HOST }}     # <-- Lee secretos del entorno 'production'
+      #     username: ${{ secrets.HOSTING_USER }} # <-- Lee secretos del entorno 'production'
+      #     key: ${{ secrets.HOSTING_SSH_KEY }}    # <-- Lee secretos del entorno 'production'
+      #     port: 22
+      #     source: "./dist/*" # El contenido de la carpeta que bajó
+      #     target: "/var/www/mi-sitio-principal" # Ruta en tu servidor

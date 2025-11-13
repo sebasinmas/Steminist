@@ -1,8 +1,8 @@
 import React from 'react';
-import type { Page, UserRole, Mentor } from '../types';
+import type { Page, UserRole, Mentor } from '@/types/types';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
-import { MENTORSHIP_CATEGORIES } from '../constants';
+import { MENTORSHIP_CATEGORIES } from '@/utils/constants';
 import ImpactMetrics from '../components/landing/ImpactMetrics';
 
 interface LandingPageProps {

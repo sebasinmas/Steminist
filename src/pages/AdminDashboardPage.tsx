@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import type { Session, ConnectionRequest, Mentor, Mentee, Mentorship } from '../types';
-import Card from '../components/common/Card';
-import MetricsCard from '../components/admin/MetricsCard';
-import AdminRequestCard from '../components/admin/AdminRequestCard';
-import Button from '../components/common/Button';
+import type { Session, ConnectionRequest, Mentor, Mentee, Mentorship } from '@/types/types';
+import Card from '@/components/common/Card';
+import MetricsCard from '@/components/admin/MetricsCard';
+import AdminRequestCard from '@/components/admin/AdminRequestCard';
+import Button from '@/components/common/Button';
 import { UsersIcon, BriefcaseIcon, StarIcon, TrendingUpIcon } from '../components/common/Icons';
-import Tabs from '../components/common/Tabs';
-import MentorManagement from '../components/admin/MentorManagement';
-import MenteeManagement from '../components/admin/MenteeManagement';
-import MentorDetailsModal from '../components/admin/MentorDetailsModal';
-import MenteeDetailsModal from '../components/admin/MenteeDetailsModal';
-import AnalyticsDetailModal from '../components/admin/AnalyticsDetailModal';
-import AnalyticsCharts from '../components/admin/AnalyticsCharts';
+import Tabs from '@/components/common/Tabs';
+import MentorManagement from '@/components/admin/MentorManagement';
+import MenteeManagement from '@/components/admin/MenteeManagement';
+import MentorDetailsModal from '@/components/admin/MentorDetailsModal';
+import MenteeDetailsModal from '@/components/admin/MenteeDetailsModal';
+import AnalyticsDetailModal from '@/components/admin/AnalyticsDetailModal';
+import AnalyticsCharts from '@/components/admin/AnalyticsCharts';
 
 
 interface AdminDashboardPageProps {

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import type { Mentor, Mentorship } from '../../types';
-import { XIcon, BriefcaseIcon, CheckCircleIcon, ClockIcon, StarIcon } from '../common/Icons';
+import type { Mentor, Mentorship } from '@/types/types';
+import { XIcon, BriefcaseIcon, CheckCircleIcon, ClockIcon, StarIcon } from '@/components/common/Icons';
 
 interface MentorDetailsModalProps {
     mentor: Mentor | null;

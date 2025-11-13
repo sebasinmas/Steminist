@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
-import type { Mentee, Mentor } from '../types';
-import Button from '../components/common/Button';
-import Tag from '../components/common/Tag';
-import { PencilIcon, CameraIcon, XIcon, LinkIcon } from '../components/common/Icons';
-import AvailabilityCalendarModal from '../components/scheduling/AvailabilityCalendarModal';
-import { MENTORSHIP_GOALS } from '../constants';
-import { useToast } from '../context/ToastContext';
+import type { Mentee, Mentor } from '@/types/types';
+import Button from '@/components/common/Button';
+import Tag from '@/components/common/Tag';
+import { PencilIcon, CameraIcon, XIcon, LinkIcon } from '@/components/common/Icons';
+import AvailabilityCalendarModal from '@/components/scheduling/AvailabilityCalendarModal';
+import { MENTORSHIP_GOALS } from '@/utils/constants';
+import { useToast } from '@/context/ToastContext';
 
 interface ProfilePageProps {
     user: Mentee | Mentor;

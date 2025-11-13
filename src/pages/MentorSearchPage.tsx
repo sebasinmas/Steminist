@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import type { Mentor, Page, Mentee } from '../types';
+import type { Mentor, Page, Mentee } from '@/types/types';
 import MentorCard from '../components/mentors/MentorCard';
-import { MENTORSHIP_CATEGORIES } from '../constants';
+import { MENTORSHIP_CATEGORIES } from '@/utils/constants';
 
 interface MentorSearchPageProps {
     mentors: Mentor[];

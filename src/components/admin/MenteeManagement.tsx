@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import type { Mentee } from '../../types';
-import Card from '../common/Card';
+import type { Mentee } from '@/types/types';
+import Card from '@/components/common/Card';
 
 interface MenteeWithStats {
     mentee: Mentee;

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import type { Mentorship, Mentor } from '../../types';
-import PieChart from '../common/PieChart';
+import type { Mentorship, Mentor } from '@/types/types';
+import PieChart from '@/components/common/PieChart';
 
 interface AnalyticsChartsProps {
     mentorships: Mentorship[];
@@ -52,7 +52,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ mentorships, mentors,
     }, [mentors, mentorMenteesCount]);
 
     const menteeGoalsData = useMemo(() => {
-        return Object.entries(menteeGoalsDistribution)
+        return (Object.entries(menteeGoalsDistribution) as [string, number][])
             .sort(([, a], [, b]) => b - a)
             .map(([name, value], index) => ({
                 label: name,

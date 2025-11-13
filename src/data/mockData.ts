@@ -1,4 +1,4 @@
-import type { Mentor, Mentee, ConnectionRequest, Mentorship, Session } from '../types';
+import type { Mentor, Mentee, ConnectionRequest, Mentorship, Session } from '@/types/types';
 
 const generateAvailability = (startOffset = 1, numDays = 10) => {
     const availability: Record<string, string[]> = {};

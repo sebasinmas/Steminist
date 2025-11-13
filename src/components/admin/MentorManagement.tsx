@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import type { Mentor } from '../../types';
-import Card from '../common/Card';
-import Button from '../common/Button';
-import { useToast } from '../../context/ToastContext';
+import type { Mentor } from '@/types/types';
+import Card from '@/components/common/Card';
+import Button from '@/components/common/Button';
+import { useToast } from '@/context/ToastContext';
 
 interface MentorManagementProps {
     mentors: Mentor[];

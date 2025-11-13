@@ -1,7 +1,7 @@
 import React from 'react';
-import type { UserRole, Session, ConnectionRequest } from '../types';
-import SessionCard from '../components/dashboard/SessionCard';
-import ConnectionRequestCard from '../components/notifications/ConnectionRequestCard';
+import type { UserRole, Session, ConnectionRequest } from '@/types/types';
+import SessionCard from '@/components/dashboard/SessionCard';
+import ConnectionRequestCard from '@/components/notifications/ConnectionRequestCard';
 
 interface NotificationsPageProps {
     userRole: UserRole;

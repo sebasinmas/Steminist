@@ -1,8 +1,8 @@
 import React from 'react';
-import type { ConnectionRequest } from '../../types';
-import Button from '../common/Button';
-import Card from '../common/Card';
-import { useToast } from '../../context/ToastContext';
+import type { ConnectionRequest } from '@/types/types';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import { useToast } from '@/context/ToastContext';
 
 interface AdminRequestCardProps {
     request: ConnectionRequest;

@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import type { Session, Mentorship } from '../../types';
-import Card from '../common/Card';
-import { XIcon, StarIcon, ClockIcon, CalendarIcon } from '../common/Icons';
-import Tag from '../common/Tag';
-import { SURVEY_OPTIONS } from '../../constants';
+import type { Session, Mentorship } from '@/types/types';
+import Card from '@/components/common/Card';
+import { XIcon, StarIcon, ClockIcon, CalendarIcon } from '@/components/common/Icons';
+import Tag from '@/components/common/Tag';
+import { SURVEY_OPTIONS } from '@/utils/constants';
 
 interface AnalyticsDetailModalProps {
     isOpen: boolean;

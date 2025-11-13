@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import type { Session, Mentee } from '../../types';
-import Card from '../common/Card';
-import { TrendingUpIcon } from '../common/Icons';
+import type { Session, Mentee } from '@/types/types';
+import Card from '@/components/common/Card';
+import { TrendingUpIcon } from '@/components/common/Icons';
 
 interface MenteeActivityProps {
     sessions: Session[];
