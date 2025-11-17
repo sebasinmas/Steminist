@@ -7,7 +7,8 @@ export type Page =
   | 'mentee_profile'
   | 'dashboard'
   | 'notifications'
-  | 'admin_dashboard';
+  | 'admin_dashboard'
+  | 'library';
 
 export type UserRole = 'mentee' | 'mentor' | 'admin';
 
@@ -106,4 +107,13 @@ export interface ConnectionRequest {
   mentee: Mentee;
   status: 'pending' | 'accepted' | 'declined';
   motivationLetter: string;
+}
+
+export interface SupportTicket {
+  id: number;
+  user: Mentee | Mentor;
+  subject: string;
+  message: string;
+  status: 'open' | 'resolved';
+  timestamp: string;
 }
