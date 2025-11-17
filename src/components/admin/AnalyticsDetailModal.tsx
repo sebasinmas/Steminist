@@ -37,7 +37,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({ isOpen, onC
                 
                 {/* Header */}
                 <div className="flex items-start justify-between pb-4 border-b border-border">
-                    <div className="flex items-center justify-between flex-grow">
+                    <div className="flex items-center justify-between grow">
                         <div className="flex items-center space-x-4">
                             <img src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 rounded-full" />
                             <div>
@@ -53,7 +53,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({ isOpen, onC
                             <img src={mentee.avatarUrl} alt={mentee.name} className="w-16 h-16 rounded-full" />
                         </div>
                     </div>
-                    <button onClick={onClose} className="ml-4 flex-shrink-0 text-muted-foreground hover:text-foreground">
+                    <button onClick={onClose} className="ml-4 shrink-0 text-muted-foreground hover:text-foreground">
                         <XIcon className="w-6 h-6" />
                     </button>
                 </div>

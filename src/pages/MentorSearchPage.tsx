@@ -109,7 +109,7 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
                     placeholder="Buscar por nombre, rol o especialidad..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full md:flex-grow p-3 border border-border rounded-lg bg-input"
+                    className="w-full md:grow p-3 border border-border rounded-lg bg-input"
                 />
                 <select
                     value={selectedCategory}

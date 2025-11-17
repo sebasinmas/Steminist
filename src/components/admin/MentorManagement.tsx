@@ -61,7 +61,7 @@ const MentorManagement: React.FC<MentorManagementProps> = ({ mentors, mentorMent
                                     className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:bg-accent/50 transition-colors"
                                 >
                                     <div 
-                                        className="flex items-center space-x-4 mb-4 sm:mb-0 flex-grow cursor-pointer"
+                                        className="flex items-center space-x-4 mb-4 sm:mb-0 grow cursor-pointer"
                                         onClick={() => onViewDetails(mentor)}
                                     >
                                         <img src={mentor.avatarUrl} alt={mentor.name} className="w-12 h-12 rounded-full" />

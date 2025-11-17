@@ -80,7 +80,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-3 text-primary hover:underline bg-secondary/50 p-3 rounded-md transition-colors hover:bg-secondary"
                                     >
-                                        <LinkIcon className="w-5 h-5 flex-shrink-0" />
+                                        <LinkIcon className="w-5 h-5 shrink-0" />
                                         <span className="font-semibold truncate">{link.title}</span>
                                     </a>
                                 ))}

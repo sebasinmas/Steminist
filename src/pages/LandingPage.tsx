@@ -9,7 +9,7 @@ const LandingPage: React.FC = () => {
     return (
         <>
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-                <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-primary to-cyan-400">
+                <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-linear-to-r from-primary to-cyan-400">
                     Te damos la bienvenida a MentorHer
                 </h1>
                 <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto">
@@ -19,7 +19,7 @@ const LandingPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-8">
                     <Card className="text-left transform hover:scale-105 transition-transform duration-300 flex flex-col">
                         <h2 className="text-2xl font-bold mb-4">Soy Mentoreada</h2>
-                        <p className="text-muted-foreground mb-6 flex-grow">
+                        <p className="text-muted-foreground mb-6 grow">
                             ¿Buscas orientación? Encuentra una experta en tu campo, reserva una sesión y acelera tu carrera.
                         </p>
                         <Link to="/register/mentee" className="w-full">
@@ -28,7 +28,7 @@ const LandingPage: React.FC = () => {
                     </Card>
                     <Card className="text-left transform hover:scale-105 transition-transform duration-300 flex flex-col">
                         <h2 className="text-2xl font-bold mb-4">Soy Mentora</h2>
-                        <p className="text-muted-foreground mb-6 flex-grow">
+                        <p className="text-muted-foreground mb-6 grow">
                             ¿Lista para compartir tu conocimiento? Únete a nuestra comunidad de expertas y genera un impacto duradero.
                         </p>
                         <Link to="/register/mentor" className="w-full">
@@ -64,13 +64,4 @@ const LandingPage: React.FC = () => {
         </>
     );
 };
-
-// A small change to Button component is needed to support `as` prop for Link
-declare module 'react' {
-    interface ButtonHTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-        as?: 'button' | 'span';
-    }
-}
-
-
 export default LandingPage;

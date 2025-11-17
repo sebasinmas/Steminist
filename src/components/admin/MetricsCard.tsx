@@ -9,7 +9,7 @@ interface MetricsCardProps {
 
 const MetricsCard: React.FC<MetricsCardProps> = ({ title, value, icon }) => {
     return (
-        <Card className="p-6 bg-gradient-to-br from-card to-secondary/50">
+        <Card className="p-6 bg-linear-to-br from-card to-secondary/50">
            <div className="flex justify-between items-start">
                  <div className="flex flex-col">
                     <p className="text-3xl lg:text-4xl font-bold text-primary">{value}</p>

@@ -13,7 +13,7 @@ const LandingPageMentee: React.FC<LandingPageMenteeProps> = ({ user }) => {
     return (
         <>
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-                <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-primary to-cyan-400">
+                <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-linear-to-r from-primary to-cyan-400">
                     ¡Qué bueno verte, {user.name.split(' ')[0]}!
                 </h1>
                 <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto">

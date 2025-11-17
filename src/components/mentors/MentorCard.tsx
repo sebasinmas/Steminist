@@ -26,7 +26,7 @@ const CircularProgress: React.FC<{ percentage: number }> = ({ percentage }) => {
     };
 
     return (
-        <div className="relative flex-shrink-0 flex items-center justify-center w-24 h-24">
+        <div className="relative shrink-0 flex items-center justify-center w-24 h-24">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 64 64">
                 <circle className="text-slate-700" strokeWidth="5" stroke="currentColor" fill="transparent" r={radius} cx="32" cy="32" />
                 <circle
@@ -83,10 +83,10 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
 
     return (
         <Card className="flex flex-col h-full transition-shadow duration-300 hover:shadow-2xl">
-            <div className="flex-grow cursor-pointer" onClick={handleNavigate}>
+            <div className="grow cursor-pointer" onClick={handleNavigate}>
                 <div className="flex items-start justify-between mb-4">
-                     <div className="flex items-start space-x-4 flex-grow pr-4">
-                        <img src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+                     <div className="flex items-start space-x-4 grow pr-4">
+                        <img src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 rounded-full object-cover shrink-0" />
                         <div className="pt-1">
                             <h3 className="text-xl font-bold">{mentor.name}</h3>
                             <p className="text-primary">{mentor.title}</p>

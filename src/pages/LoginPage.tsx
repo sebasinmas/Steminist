@@ -60,7 +60,7 @@ const LoginPage: React.FC = () => {
                         />
                     </div>
                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                    <Button type="submit" className="w-full !mt-6" size="lg" disabled={isLoading}>
+                    <Button type="submit" className="w-full mt-6!" size="lg" disabled={isLoading}>
                         {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
                     </Button>
                 </form>

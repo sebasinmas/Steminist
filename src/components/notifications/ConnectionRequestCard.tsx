@@ -27,7 +27,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, 
         <Card>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <div className="flex items-center space-x-4">
-                    <img src={mentee.avatarUrl} alt={mentee.name} className="w-16 h-16 rounded-full flex-shrink-0" />
+                    <img src={mentee.avatarUrl} alt={mentee.name} className="w-16 h-16 rounded-full shrink-0" />
                     <div>
                         <h3 className="text-lg font-bold">Nueva Solicitud de Conexión</h3>
                         <p className="text-sm text-muted-foreground">
@@ -35,7 +35,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, 
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center space-x-2 self-start md:self-center flex-shrink-0">
+                <div className="flex items-center space-x-2 self-start md:self-center shrink-0">
                     <Button onClick={handleAccept} size="sm" variant="primary">Aceptar</Button>
                     <Button onClick={handleDecline} size="sm" variant="secondary">Rechazar</Button>
                 </div>
