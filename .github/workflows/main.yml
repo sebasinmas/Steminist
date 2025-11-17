@@ -27,8 +27,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configurar Node.js
-      # (¡Este es el paso clave que faltaba!)
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
