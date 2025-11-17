@@ -65,12 +65,5 @@ const LandingPage: React.FC = () => {
     );
 };
 
-// A small change to Button component is needed to support `as` prop for Link
-declare module 'react' {
-    interface ButtonHTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-        as?: 'button' | 'span';
-    }
-}
-
 
 export default LandingPage;

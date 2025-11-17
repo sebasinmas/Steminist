@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Mentor, Mentee, Mentorship, Session, MentorSurvey, Attachment } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { POSITIVE_AFFIRMATIONS } from '../../constants';
+import { POSITIVE_AFFIRMATIONS } from '../constants';
 import AffirmationCard from '../components/dashboard/AffirmationCard';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
