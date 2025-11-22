@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Mentor, Mentee, Mentorship, Session, MentorSurvey, Attachment } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { POSITIVE_AFFIRMATIONS } from '../../constants';
+import { POSITIVE_AFFIRMATIONS } from '../utils/constants';
 import AffirmationCard from '../components/dashboard/AffirmationCard';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
@@ -34,10 +34,10 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
     const { addToast } = useToast();
 
     const currentUser = user as Mentor | Mentee;
-    
+
     const myMentorships = useMemo(() => {
         if (!currentUser) return [];
-        return mentorships.filter(m => 
+        return mentorships.filter(m =>
             isMentor ? m.mentor.id === currentUser.id : m.mentee.id === currentUser.id
         );
     }, [mentorships, currentUser, isMentor]);
@@ -46,7 +46,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
     const [isScheduling, setIsScheduling] = useState(false);
     const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
     const [activeMentorshipForScheduling, setActiveMentorshipForScheduling] = useState<Mentorship | null>(null);
-    const [sessionForSurvey, setSessionForSurvey] = useState<{mentorshipId: number, session: Session} | null>(null);
+    const [sessionForSurvey, setSessionForSurvey] = useState<{ mentorshipId: number, session: Session } | null>(null);
     const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
     const randomAffirmation = useMemo(() => POSITIVE_AFFIRMATIONS[Math.floor(Math.random() * POSITIVE_AFFIRMATIONS.length)], []);
 
@@ -107,14 +107,14 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         submitSupportTicket(subject, message);
         addToast('Tu consulta ha sido enviada. Te responderemos pronto.', 'success');
     };
-    
+
     const MatchImprovementCard = () => (
         <Card className="bg-secondary/50">
             <h3 className="font-bold text-lg">
                 {isMentor ? 'Atrae a las mentoreadas ideales' : '¡Mejora tus Matches!'}
             </h3>
             <p className="text-sm text-muted-foreground mt-1 mb-4">
-                 {isMentor ? 'Actualiza tus temas de mentoría para que las mentoreadas adecuadas te encuentren.' : 'Actualiza tus intereses y objetivos para encontrar a la mentora perfecta para ti.'}
+                {isMentor ? 'Actualiza tus temas de mentoría para que las mentoreadas adecuadas te encuentren.' : 'Actualiza tus intereses y objetivos para encontrar a la mentora perfecta para ti.'}
             </p>
             <Button variant="secondary" onClick={() => navigate('/profile')}>Actualizar Mi Perfil</Button>
         </Card>
@@ -126,13 +126,13 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     <div className="lg:col-span-3 space-y-6 sticky top-28 hidden lg:block">
-                       <MentorProfileDetails mentor={currentUser as Mentor} />
+                        <MentorProfileDetails mentor={currentUser as Mentor} />
                     </div>
                     <div className="lg:col-span-6 space-y-8">
                         <div>
                             <h1 className="text-3xl font-bold mb-6">Panel de Control</h1>
                             {selectedMentorship ? (
-                                <MentorshipProgress 
+                                <MentorshipProgress
                                     key={selectedMentorship.id}
                                     mentorship={selectedMentorship}
                                     onScheduleSession={() => handleScheduleClick(selectedMentorship)}
@@ -149,8 +149,8 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                         </div>
                         <div>
                             <h2 className="text-2xl font-semibold mt-10">Mentorías Completadas</h2>
-                             {myMentorships.filter(m => m.status === 'completed').length > 0 ? (
-                                myMentorships.filter(m => m.status === 'completed').map(m => ( <MentorshipProgress key={m.id} mentorship={m} onScheduleSession={()=>{}} onUpdateSession={()=>{}} onAddAttachment={()=>{}} onCompleteSession={()=>{}} onShowTerminationModal={()=>{}} /> ))
+                            {myMentorships.filter(m => m.status === 'completed').length > 0 ? (
+                                myMentorships.filter(m => m.status === 'completed').map(m => (<MentorshipProgress key={m.id} mentorship={m} onScheduleSession={() => { }} onUpdateSession={() => { }} onAddAttachment={() => { }} onCompleteSession={() => { }} onShowTerminationModal={() => { }} />))
                             ) : (
                                 <Card><p className="text-muted-foreground">Aún no has completado ninguna mentoría.</p></Card>
                             )}
@@ -158,20 +158,20 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                     </div>
 
                     <div className="lg:col-span-3 space-y-6 sticky top-28">
-                         <MentorConnectionsCard mentorships={activeMentorships} onSelectMentorship={setSelectedMentorship} selectedMentorshipId={selectedMentorship?.id} />
-                         <AffirmationCard affirmation={randomAffirmation} />
-                         <HelpCenterCard onContactClick={() => setIsSupportModalOpen(true)} />
-                         <MatchImprovementCard />
+                        <MentorConnectionsCard mentorships={activeMentorships} onSelectMentorship={setSelectedMentorship} selectedMentorshipId={selectedMentorship?.id} />
+                        <AffirmationCard affirmation={randomAffirmation} />
+                        <HelpCenterCard onContactClick={() => setIsSupportModalOpen(true)} />
+                        <MatchImprovementCard />
                     </div>
                 </div>
-                {activeMentorshipForScheduling && (<SchedulingModal mentor={activeMentorshipForScheduling.mentor} isOpen={isScheduling} onClose={() => setIsScheduling(false)} onSessionBook={handleSessionBooked}/>)}
-                {sessionForSurvey && (<MentorSurveyModal isOpen={isSurveyModalOpen} onClose={() => setIsSurveyModalOpen(false)} onSubmit={handleSurveySubmit}/>)}
-                {terminatingMentorship && (<TerminationRequestModal isOpen={!!terminatingMentorship} onClose={() => setTerminatingMentorship(null)} onSubmit={handleTerminationRequest} mentorship={terminatingMentorship}/>)}
+                {activeMentorshipForScheduling && (<SchedulingModal mentor={activeMentorshipForScheduling.mentor} isOpen={isScheduling} onClose={() => setIsScheduling(false)} onSessionBook={handleSessionBooked} />)}
+                {sessionForSurvey && (<MentorSurveyModal isOpen={isSurveyModalOpen} onClose={() => setIsSurveyModalOpen(false)} onSubmit={handleSurveySubmit} />)}
+                {terminatingMentorship && (<TerminationRequestModal isOpen={!!terminatingMentorship} onClose={() => setTerminatingMentorship(null)} onSubmit={handleTerminationRequest} mentorship={terminatingMentorship} />)}
                 <ContactSupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} onSubmit={handleSubmitSupportTicket} />
             </div>
         );
     }
-    
+
     // MENTEE DASHBOARD VIEW
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -184,7 +184,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                     <h2 className="text-2xl font-semibold">Mis Mentorías Activas</h2>
                     {myMentorships.filter(m => m.status === 'active').length > 0 ? (
                         myMentorships.filter(m => m.status === 'active').map(m => (
-                            <MentorshipProgress 
+                            <MentorshipProgress
                                 key={m.id}
                                 mentorship={m}
                                 onScheduleSession={() => handleScheduleClick(m)}
@@ -204,12 +204,12 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                         </Card>
                     )}
                     <h2 className="text-2xl font-semibold mt-10">Mentorías Completadas</h2>
-                     {myMentorships.filter(m => m.status === 'completed').length > 0 ? (
+                    {myMentorships.filter(m => m.status === 'completed').length > 0 ? (
                         myMentorships.filter(m => m.status === 'completed').map(m => (
-                           <MentorshipProgress 
+                            <MentorshipProgress
                                 key={m.id}
                                 mentorship={m}
-                                onScheduleSession={() => {}} onUpdateSession={() => {}} onAddAttachment={() => {}} onCompleteSession={() => {}} onShowTerminationModal={() => {}}
+                                onScheduleSession={() => { }} onUpdateSession={() => { }} onAddAttachment={() => { }} onCompleteSession={() => { }} onShowTerminationModal={() => { }}
                             />
                         ))
                     ) : (
@@ -222,8 +222,8 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                     <MatchImprovementCard />
                 </div>
             </div>
-            {activeMentorshipForScheduling && (<SchedulingModal mentor={activeMentorshipForScheduling.mentor} isOpen={isScheduling} onClose={() => setIsScheduling(false)} onSessionBook={handleSessionBooked}/>)}
-            {terminatingMentorship && (<TerminationRequestModal isOpen={!!terminatingMentorship} onClose={() => setTerminatingMentorship(null)} onSubmit={handleTerminationRequest} mentorship={terminatingMentorship}/>)}
+            {activeMentorshipForScheduling && (<SchedulingModal mentor={activeMentorshipForScheduling.mentor} isOpen={isScheduling} onClose={() => setIsScheduling(false)} onSessionBook={handleSessionBooked} />)}
+            {terminatingMentorship && (<TerminationRequestModal isOpen={!!terminatingMentorship} onClose={() => setTerminatingMentorship(null)} onSubmit={handleTerminationRequest} mentorship={terminatingMentorship} />)}
             <ContactSupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} onSubmit={handleSubmitSupportTicket} />
         </div>
     );

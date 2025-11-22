@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Mentor, Mentee } from '../types';
 import { useAuth } from '../context/AuthContext';
 import MentorCard from '../components/mentors/MentorCard';
-import { MENTORSHIP_CATEGORIES } from '../constants';
+import { MENTORSHIP_CATEGORIES } from '../utils/constants';
 
 interface MentorSearchPageProps {
     mentors: Mentor[];
@@ -26,43 +26,43 @@ const calculateMatch = (mentor: Mentor, mentee: Mentee): MatchDetails => {
     const breakdown: MatchBreakdown[] = [];
 
     const topicIntersection = (mentor.mentoringTopics || []).filter(topic => (mentee.mentorshipGoals || []).includes(topic));
-    if (topicIntersection.length > 1) { 
-        score += 40; 
+    if (topicIntersection.length > 1) {
+        score += 40;
         breakdown.push({ criterion: 'Expertise', status: 'Exacta' });
-    } else if (topicIntersection.length > 0) { 
-        score += 20; 
+    } else if (topicIntersection.length > 0) {
+        score += 20;
         breakdown.push({ criterion: 'Expertise', status: 'Parcial' });
     }
 
     if (mentor.roleLevel && mentee.roleLevel) {
         const roleHierarchy = { 'entry': 1, 'mid': 2, 'senior': 3, 'lead': 4 };
-        if (roleHierarchy[mentor.roleLevel] >= roleHierarchy[mentee.roleLevel]) { 
-            score += 20; 
+        if (roleHierarchy[mentor.roleLevel] >= roleHierarchy[mentee.roleLevel]) {
+            score += 20;
             breakdown.push({ criterion: 'Nivel de Rol', status: 'Exacta' });
         }
     }
 
     if (mentor.timezone && mentee.timezone) {
-        if (mentor.timezone === mentee.timezone) { 
-            score += 15; 
+        if (mentor.timezone === mentee.timezone) {
+            score += 15;
             breakdown.push({ criterion: 'Huso Horario', status: 'Exacta' });
-        } else if (mentor.timezone.split('/')[0] === mentee.timezone.split('/')[0]) { 
-            score += 5; 
+        } else if (mentor.timezone.split('/')[0] === mentee.timezone.split('/')[0]) {
+            score += 5;
             breakdown.push({ criterion: 'Huso Horario', status: 'Parcial' });
         }
     }
 
     const motivationIntersection = (mentor.motivations || []).filter(m => (mentee.motivations || []).includes(m));
-    if (motivationIntersection.length > 0) { 
-        score += 15; 
+    if (motivationIntersection.length > 0) {
+        score += 15;
         breakdown.push({ criterion: 'Motivaciones', status: 'Exacta' });
     }
-    
+
     // These are always considered exact matches for now and contribute to the score
     breakdown.push({ criterion: 'Comunicación', status: 'Exacta' });
     breakdown.push({ criterion: 'Disponibilidad', status: 'Exacta' });
     score += 10;
-    
+
     return {
         affinityScore: Math.min(100, Math.floor(score)),
         breakdown: breakdown,
@@ -86,7 +86,7 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
             const matchesCategory = selectedCategory === 'all' || mentor.expertise.includes(selectedCategory);
             return matchesSearch && matchesCategory;
         });
-        
+
         return filtered.map(mentor => ({
             mentor,
             matchDetails: calculateMatch(mentor, currentUser)
@@ -122,13 +122,13 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
                     ))}
                 </select>
             </div>
-            
+
             {mentorsWithAffinity.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {mentorsWithAffinity.map(({ mentor, matchDetails }) => (
-                        <MentorCard 
-                            key={mentor.id} 
-                            mentor={mentor} 
+                        <MentorCard
+                            key={mentor.id}
+                            mentor={mentor}
                             matchDetails={matchDetails}
                         />
                     ))}

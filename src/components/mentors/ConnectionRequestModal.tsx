@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Mentor } from '../../types';
 import Button from '../common/Button';
-import { MENTORSHIP_GOALS } from '../../constants';
+import { MENTORSHIP_GOALS } from '../../utils/constants';
 
 interface ConnectionRequestModalProps {
     mentor: Mentor;
@@ -31,15 +31,15 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
 
     const handleSubmit = () => {
         const motivationLetter = `**Temas de Interés:**\n- ${selectedTopics.join('\n- ')}\n\n**Objetivos:**\n- ${selectedGoals.join('\n- ')}\n\n**Mensaje Adicional:**\n${additionalMessage || 'N/A'}`;
-        
+
         onSendRequest(motivationLetter);
-        
+
         // Reset state
         setSelectedTopics([]);
         setSelectedGoals([]);
         setAdditionalMessage('');
     };
-    
+
     const handleClose = () => {
         // Reset state on close
         setSelectedTopics([]);
@@ -64,8 +64,8 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
                         <p className="text-sm text-muted-foreground mb-3">Selecciona los temas que más te interesan de la experiencia de {mentor.name}.</p>
                         <div className="flex flex-wrap gap-2">
                             {mentor.expertise.map(topic => (
-                                <button 
-                                    key={topic} 
+                                <button
+                                    key={topic}
                                     onClick={() => handleTopicToggle(topic)}
                                     className={`text-sm font-semibold px-3 py-1.5 rounded-full border-2 transition-colors ${selectedTopics.includes(topic) ? 'bg-primary border-primary text-primary-foreground' : 'bg-transparent border-border hover:bg-accent'}`}
                                 >
@@ -82,7 +82,7 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
                         <div className="space-y-2">
                             {MENTORSHIP_GOALS.map(goal => (
                                 <label key={goal} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer">
-                                    <input 
+                                    <input
                                         type="checkbox"
                                         checked={selectedGoals.includes(goal)}
                                         onChange={() => handleGoalToggle(goal)}
@@ -97,7 +97,7 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
                     {/* Additional Message Section */}
                     <div>
                         <label htmlFor="motivation" className="block text-lg font-semibold mb-2">
-                           3. Mensaje Adicional (Opcional)
+                            3. Mensaje Adicional (Opcional)
                         </label>
                         <p className="text-sm text-muted-foreground mb-3">
                             Añade cualquier otro contexto que quieras que {mentor.name} conozca.

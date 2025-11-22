@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
-import { MENTORSHIP_CATEGORIES } from '../constants';
+import { MENTORSHIP_CATEGORIES } from '../utils/constants';
 import ImpactMetrics from '../components/landing/ImpactMetrics';
 
 const LandingPage: React.FC = () => {
@@ -36,14 +36,14 @@ const LandingPage: React.FC = () => {
                         </Link>
                     </Card>
                 </div>
-                
+
                 <p className="text-center text-muted-foreground">
                     ¿Ya tienes una cuenta?{' '}
                     <Link to="/login" className="font-semibold text-primary hover:underline">
                         Inicia Sesión aquí
                     </Link>
                 </p>
-                
+
                 <div className="max-w-5xl mx-auto mt-16">
                     <h3 className="text-2xl font-bold mb-6">Explora Mentorías en...</h3>
                     <div className="flex flex-wrap justify-center gap-3">
