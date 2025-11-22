@@ -1,18 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
-import type { UserRole, Mentee, Mentor } from '../types';
-import { mockCurrentUserMentee, mockCurrentMentor } from '../data/mockData';
-
-// A mock admin user for demonstration
-const mockAdminUser = {
-    id: 999,
-    name: 'Admin User',
-    avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/male/74.jpg',
-    expertise: ['Platform Management'],
-    company: 'MentorHer Platform',
-    title: 'Administrator'
-};
-
-export type User = Mentee | Mentor | typeof mockAdminUser;
+import { authService } from '../services/authService';
+import type { UserRole, Mentee, Mentor, User } from '../types';
 
 interface AuthContextType {
     user: User | null;
@@ -26,16 +14,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(() => {
-        try {
-            const storedUser = localStorage.getItem('user');
-            return storedUser ? JSON.parse(storedUser) : null;
-        } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
-            return null;
-        }
-    });
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
+    // Initialize auth state from localStorage/Token
+    useEffect(() => {
+        const initAuth = async () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    const user = await authService.validateToken(token);
+                    setUser(user);
+                } catch (error) {
+                    console.error("Invalid token", error);
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user'); // Clean up legacy
+                }
+            } else {
+                // Fallback to legacy user storage if no token (optional, for backward compat during dev)
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    try {
+                        setUser(JSON.parse(storedUser));
+                    } catch (e) {
+                        localStorage.removeItem('user');
+                    }
+                }
+            }
+            setLoading(false);
+        };
+        initAuth();
+    }, []);
+
+    // Sync user to localStorage (legacy support, can be removed if we fully rely on token)
     useEffect(() => {
         if (user) {
             localStorage.setItem('user', JSON.stringify(user));
@@ -45,36 +56,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [user]);
 
     const login = async (email: string, password?: string) => {
-        // Mock API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const emailLower = email.toLowerCase();
-        
-        if (emailLower === 'mentora@demo.com') {
-            setUser(mockCurrentMentor);
-        } else if (emailLower === 'mentoreada@demo.com') {
-            setUser(mockCurrentUserMentee);
-        } else if (emailLower === 'admin@demo.com') {
-            setUser(mockAdminUser);
-        } else if (emailLower === 'admin@admin.cl' && password === 'admin') {
-            setUser(mockAdminUser);
-        } else {
-            throw new Error('Invalid credentials');
+        try {
+            const { user, token } = await authService.login(email, password);
+            setUser(user);
+            localStorage.setItem('authToken', token);
+        } catch (error) {
+            console.error("Login failed", error);
+            throw error;
         }
     };
 
     const logout = () => {
         setUser(null);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
     };
 
     const register = async (data: any, role: 'mentee' | 'mentor') => {
         console.log(`Registering new ${role}:`, data);
         // Mock API call
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         if (role === 'mentor') {
             const newMentor: Mentor = {
                 id: Date.now(),
                 name: data.name,
+                email: data.email || 'newmentor@example.com',
+                role: 'mentor',
                 avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/1.jpg',
                 title: 'Nueva Mentora',
                 company: 'Tu Compañía',
@@ -88,10 +96,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 roleLevel: 'senior',
             };
             setUser(newMentor);
+            localStorage.setItem('authToken', 'mock_token_from_register');
         } else {
-             const newMentee: Mentee = {
+            const newMentee: Mentee = {
                 id: Date.now(),
                 name: data.name,
+                email: data.email || 'newmentee@example.com',
+                role: 'mentee',
                 avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/2.jpg',
                 bio: 'Bienvenida a MentorHer. Completa tu perfil y empieza a buscar mentoras.',
                 expertise: [],
@@ -101,13 +112,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 neurodivergence: data.neurodivergence || undefined,
             };
             setUser(newMentee);
+            localStorage.setItem('authToken', 'mock_token_from_register');
         }
     };
 
     const value = useMemo(() => {
         let role: UserRole | null = null;
         if (user) {
-            if ('reviews' in user) role = 'mentor';
+            if (user.role) role = user.role;
+            else if ('reviews' in user) role = 'mentor';
             else if ('mentorshipGoals' in user) role = 'mentee';
             else if (user.name === 'Admin User') role = 'admin';
         }
@@ -124,7 +137,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return (
         <AuthContext.Provider value={value}>
-            {children}
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

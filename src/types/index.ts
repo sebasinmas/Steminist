@@ -24,6 +24,8 @@ export interface Link {
 export interface BaseUser {
   id: number;
   name: string;
+  email: string;
+  role: UserRole; // Reverted to role
   avatarUrl: string;
   expertise: string[];
   availability: Record<string, string[]>;
@@ -117,3 +119,14 @@ export interface SupportTicket {
   status: 'open' | 'resolved';
   timestamp: string;
 }
+
+export type User = Mentee | Mentor | {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin';
+  avatarUrl: string;
+  expertise: string[];
+  company: string;
+  title: string;
+};
