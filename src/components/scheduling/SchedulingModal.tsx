@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import type { Mentor, Session } from '../../types';
 import { mockMentee } from '../../data/mockData';
 import Button from '../common/Button';
-import { POSITIVE_AFFIRMATIONS } from '../../constants';
+import { POSITIVE_AFFIRMATIONS } from '../../utils/constants';
 
 interface SchedulingModalProps {
     mentor: Mentor;
@@ -24,7 +24,7 @@ const SchedulingModal: React.FC<SchedulingModalProps> = ({ mentor, isOpen, onClo
 
     const handleBooking = () => {
         if (!selectedDate || !selectedTime || !topic || !goals) return;
-        
+
         // FIX: Removed 'mentor' and 'mentee' properties as they do not exist on the Session type and are already part of the parent Mentorship object.
         const newSession: Omit<Session, 'id' | 'sessionNumber'> = {
             date: selectedDate,
@@ -43,15 +43,15 @@ const SchedulingModal: React.FC<SchedulingModalProps> = ({ mentor, isOpen, onClo
         setTopic('');
         setGoals('');
     };
-    
+
     const randomAffirmation = POSITIVE_AFFIRMATIONS[Math.floor(Math.random() * POSITIVE_AFFIRMATIONS.length)];
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
             <div className="bg-card rounded-lg p-8 m-4 max-w-2xl w-full relative transform transition-all">
-                 <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">&times;</button>
-                 <h2 className="text-2xl font-bold mb-6 text-center">Reservar una sesión con {mentor.name}</h2>
-                
+                <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">&times;</button>
+                <h2 className="text-2xl font-bold mb-6 text-center">Reservar una sesión con {mentor.name}</h2>
+
                 {step === 1 && (
                     <div>
                         <h3 className="text-lg font-semibold mb-4">1. Selecciona Fecha y Hora</h3>
@@ -105,9 +105,9 @@ const SchedulingModal: React.FC<SchedulingModalProps> = ({ mentor, isOpen, onClo
                                 placeholder="Ej: Quiero recibir feedback sobre mi portafolio y hablar sobre la transición a diseño UX."
                             />
                         </div>
-                         <div className="bg-accent text-accent-foreground p-4 rounded-md text-sm mb-6">
-                           <p className="font-semibold">¡Consejo Rápido!</p>
-                           <p>{randomAffirmation}</p>
+                        <div className="bg-accent text-accent-foreground p-4 rounded-md text-sm mb-6">
+                            <p className="font-semibold">¡Consejo Rápido!</p>
+                            <p>{randomAffirmation}</p>
                         </div>
                         <div className="flex justify-between">
                             <Button variant="secondary" onClick={() => setStep(1)}>Atrás</Button>

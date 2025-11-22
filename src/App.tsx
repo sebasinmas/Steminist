@@ -10,7 +10,7 @@ import { mockMentors, mockCurrentUserMentee, mockConnectionRequests, mockCurrent
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import ProtectedRoute from './components/router/ProtectedRoute';
+import ProtectedRoute from './routes/ProtectedRoute';
 import Header from './components/layout/Header';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
@@ -52,8 +52,8 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         const calculateNotifications = () => {
             if (!isLoggedIn) return;
-            const sessionNotifications = pendingSessions.filter(s => 
-                (s.status === 'pending' && role === 'mentor') || 
+            const sessionNotifications = pendingSessions.filter(s =>
+                (s.status === 'pending' && role === 'mentor') ||
                 (s.status === 'needs_confirmation' && role === 'mentee')
             ).length;
             const connectionNotifications = connectionRequests.filter(cr => cr.status === 'pending' && role === 'mentor').length;
@@ -85,14 +85,14 @@ const AppContent: React.FC = () => {
             document.documentElement.classList.remove('dark');
         }
     };
-    
+
     // Data manipulation functions (acting as a mock API)
     const updateMentorshipSession = (mentorshipId: number, sessionId: number, updates: Partial<Session>) => {
         setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, sessions: m.sessions.map(s => s.id === sessionId ? { ...s, ...updates } : s) } : m));
     };
 
     const addAttachmentToSession = (mentorshipId: number, sessionId: number, attachment: Attachment) => {
-         setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, sessions: m.sessions.map(s => s.id === sessionId ? { ...s, attachments: [...(s.attachments || []), attachment] } : s) } : m));
+        setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, sessions: m.sessions.map(s => s.id === sessionId ? { ...s, attachments: [...(s.attachments || []), attachment] } : s) } : m));
     };
 
     const addSurveyToSession = (mentorshipId: number, sessionId: number, survey: MentorSurvey) => {
@@ -102,26 +102,26 @@ const AppContent: React.FC = () => {
             setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, status: 'completed' } : m));
         }
     };
-    
+
     const updateConnectionStatus = (requestId: number, newStatus: 'accepted' | 'declined') => {
         const request = connectionRequests.find(r => r.id === requestId);
         if (!request) return;
-        setConnectionRequests(prev => prev.map(r => r.id === requestId ? {...r, status: newStatus} : r));
+        setConnectionRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
         if (newStatus === 'accepted') {
-            setMentorConnections(prev => ({...prev, [request.mentor.id]: 'connected'}));
+            setMentorConnections(prev => ({ ...prev, [request.mentor.id]: 'connected' }));
             const newMentorship: Mentorship = { id: mentorships.length + 1, mentor: request.mentor, mentee: request.mentee, status: 'active', sessions: [], startDate: new Date().toISOString().split('T')[0] };
             setMentorships(prev => [...prev, newMentorship]);
         } else {
-            setMentorConnections(prev => ({...prev, [request.mentor.id]: 'declined'}));
+            setMentorConnections(prev => ({ ...prev, [request.mentor.id]: 'declined' }));
         }
     };
 
     const sendConnectionRequest = (mentor: Mentor, motivationLetter: string) => {
-        setMentorConnections(prev => ({...prev, [mentor.id]: 'pending'}));
+        setMentorConnections(prev => ({ ...prev, [mentor.id]: 'pending' }));
         const newRequest: ConnectionRequest = { id: connectionRequests.length + 2, mentor, mentee: mockCurrentUserMentee, status: 'pending', motivationLetter };
         setConnectionRequests(prev => [newRequest, ...prev]);
     };
-    
+
     const addSession = (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
         setMentorships(prev => prev.map(m => {
             if (m.id === mentorshipId && m.sessions.length < 3) {
@@ -131,7 +131,7 @@ const AppContent: React.FC = () => {
             return m;
         }));
     };
-    
+
     const updateMentorMaxMentees = (mentorId: number, maxMentees: number) => {
         setMentors(prev => prev.map(m => m.id === mentorId ? { ...m, maxMentees } : m));
     };
@@ -150,7 +150,7 @@ const AppContent: React.FC = () => {
     const updateSupportTicketStatus = (ticketId: number, status: 'resolved') => {
         setSupportTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status } : t));
     };
-    
+
     // Wrapper for MentorProfilePage to handle data fetching based on URL param
     const MentorProfilePageWrapper = () => {
         const { mentorId } = useParams<{ mentorId: string }>();
@@ -177,22 +177,22 @@ const AppContent: React.FC = () => {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register/:role" element={<RegisterPage />} />
                     <Route path="/register" element={<Navigate to="/register/mentee" replace />} />
-                    
+
                     <Route path="/" element={<HomePage />} />
-                    
+
                     <Route element={<ProtectedRoute />}>
                         <Route path="/dashboard" element={
-                            role === 'admin' 
-                            ? <Navigate to="/admin" replace /> 
-                            : <DashboardPage
-                                mentorships={mentorships}
-                                addSession={addSession}
-                                updateMentorshipSession={updateMentorshipSession}
-                                addAttachmentToSession={addAttachmentToSession}
-                                addSurveyToSession={addSurveyToSession}
-                                requestMentorshipTermination={requestMentorshipTermination}
-                                submitSupportTicket={submitSupportTicket}
-                            />
+                            role === 'admin'
+                                ? <Navigate to="/admin" replace />
+                                : <DashboardPage
+                                    mentorships={mentorships}
+                                    addSession={addSession}
+                                    updateMentorshipSession={updateMentorshipSession}
+                                    addAttachmentToSession={addAttachmentToSession}
+                                    addSurveyToSession={addSurveyToSession}
+                                    requestMentorshipTermination={requestMentorshipTermination}
+                                    submitSupportTicket={submitSupportTicket}
+                                />
                         } />
                         <Route path="/discover" element={<MentorSearchPage mentors={mentors} />} />
                         <Route path="/mentor/:mentorId" element={<MentorProfilePageWrapper />} />
@@ -202,22 +202,22 @@ const AppContent: React.FC = () => {
                             <NotificationsPage
                                 sessions={pendingSessions}
                                 connectionRequests={connectionRequests}
-                                updateSessionStatus={() => {}}
+                                updateSessionStatus={() => { }}
                                 updateConnectionStatus={updateConnectionStatus}
                             />
                         } />
                         <Route path="/admin" element={
-                             role === 'admin' 
-                             ? <AdminDashboardPage
-                                mentorships={mentorships}
-                                requests={connectionRequests}
-                                mentors={mentors}
-                                updateConnectionStatus={updateConnectionStatus}
-                                updateMentorMaxMentees={updateMentorMaxMentees}
-                                supportTickets={supportTickets}
-                                updateSupportTicketStatus={updateSupportTicketStatus}
-                             /> 
-                             : <Navigate to="/dashboard" replace />
+                            role === 'admin'
+                                ? <AdminDashboardPage
+                                    mentorships={mentorships}
+                                    requests={connectionRequests}
+                                    mentors={mentors}
+                                    updateConnectionStatus={updateConnectionStatus}
+                                    updateMentorMaxMentees={updateMentorMaxMentees}
+                                    supportTickets={supportTickets}
+                                    updateSupportTicketStatus={updateSupportTicketStatus}
+                                />
+                                : <Navigate to="/dashboard" replace />
                         } />
                     </Route>
 

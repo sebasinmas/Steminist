@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Button from '../common/Button';
-import { MENTOR_SURVEY_QUESTIONS, SURVEY_OPTIONS } from '../../constants';
+import { MENTOR_SURVEY_QUESTIONS, SURVEY_OPTIONS } from '../../utils/constants';
 import type { MentorSurvey } from '../../types';
 
 interface MentorSurveyModalProps {
@@ -21,21 +21,21 @@ const MentorSurveyModal: React.FC<MentorSurveyModalProps> = ({ isOpen, onClose, 
         onSubmit({ preparation, engagement, outcome });
         handleClose();
     };
-    
+
     const handleClose = () => {
         setPreparation('');
         setEngagement('');
         setOutcome('');
         onClose();
     };
-    
-    const RadioGroup = ({ label, value, onChange, options }: { label: string; value: string; onChange: (val: any) => void; options: Record<string,string> }) => (
+
+    const RadioGroup = ({ label, value, onChange, options }: { label: string; value: string; onChange: (val: any) => void; options: Record<string, string> }) => (
         <div className="mb-6">
             <label className="block text-sm font-medium mb-2">{label}</label>
             <div className="flex flex-wrap gap-2">
                 {Object.entries(options).map(([key, text]) => (
-                     <button 
-                        key={key} 
+                    <button
+                        key={key}
                         onClick={() => onChange(key)}
                         className={`text-sm font-semibold px-3 py-1.5 rounded-full border-2 transition-colors ${value === key ? 'bg-primary border-primary text-primary-foreground' : 'bg-transparent border-border hover:bg-accent'}`}
                     >
@@ -52,14 +52,14 @@ const MentorSurveyModal: React.FC<MentorSurveyModalProps> = ({ isOpen, onClose, 
                 <h2 className="text-2xl font-bold mb-4">Feedback de la Sesión</h2>
                 <p className="text-muted-foreground mb-6">Tus comentarios ayudan a mejorar la plataforma y a dar seguimiento al progreso.</p>
 
-                <RadioGroup 
+                <RadioGroup
                     label={MENTOR_SURVEY_QUESTIONS.preparation}
                     value={preparation}
                     onChange={setPreparation}
                     options={SURVEY_OPTIONS}
                 />
-                
-                 <RadioGroup 
+
+                <RadioGroup
                     label={MENTOR_SURVEY_QUESTIONS.engagement}
                     value={engagement}
                     onChange={setEngagement}
