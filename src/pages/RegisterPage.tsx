@@ -6,15 +6,19 @@ import Card from '../components/common/Card';
 
 const RegisterPage: React.FC = () => {
     const { role } = useParams<{ role: 'mentee' | 'mentor' }>();
-    
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [neurodivergence, setNeurodivergence] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { register } = useAuth();
+    const { register, isLoggedIn } = useAuth();
     const navigate = useNavigate();
+
+    if (isLoggedIn) {
+        return <Navigate to="/" replace />;
+    }
 
     if (!role || !['mentee', 'mentor'].includes(role)) {
         return <Navigate to="/register/mentee" replace />;
@@ -33,7 +37,7 @@ const RegisterPage: React.FC = () => {
             setIsLoading(false);
         }
     };
-    
+
     const title = role === 'mentor' ? 'Conviértete en Mentora' : 'Crea tu Cuenta de Mentoreada';
 
     return (
@@ -44,7 +48,7 @@ const RegisterPage: React.FC = () => {
                 </Link>
                 <h1 className="text-2xl font-bold text-center mb-6">{title}</h1>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                     <div>
+                    <div>
                         <label htmlFor="name" className="block text-sm font-medium mb-1">Nombre Completo</label>
                         <input
                             id="name"
@@ -100,7 +104,7 @@ const RegisterPage: React.FC = () => {
                         {isLoading ? 'Creando cuenta...' : 'Registrarse'}
                     </Button>
                 </form>
-                 <p className="text-center text-sm text-muted-foreground mt-6">
+                <p className="text-center text-sm text-muted-foreground mt-6">
                     ¿Ya tienes una cuenta?{' '}
                     <Link to="/login" className="font-semibold text-primary hover:underline">
                         Inicia Sesión
