@@ -23,8 +23,12 @@ const LoginPage: React.FC = () => {
         try {
             await login(email, password);
             navigate('/', { replace: true });
-        } catch (err) {
-            setError('Credenciales inválidas. Prueba con: mentora@demo.com, mentoreada@demo.com, o admin@admin.cl (pass: admin).');
+        } catch (err: any) {
+            if (err.message === 'Invalid login credentials') {
+                setError('Credenciales incorrectas. Por favor, verifica tu correo y contraseña.');
+            } else {
+                setError('Error al iniciar sesión. Inténtalo de nuevo.');
+            }
         } finally {
             setIsLoading(false);
         }

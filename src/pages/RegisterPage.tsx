@@ -19,7 +19,6 @@ const RegisterPage: React.FC = () => {
     if (isLoggedIn) {
         return <Navigate to="/" replace />;
     }
-
     if (!role || !['mentee', 'mentor'].includes(role)) {
         return <Navigate to="/register/mentee" replace />;
     }
@@ -27,12 +26,25 @@ const RegisterPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        if (password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
         setIsLoading(true);
         try {
             await register({ name, email, password, neurodivergence }, role);
             navigate('/', { replace: true });
-        } catch (err) {
-            setError('Hubo un error en el registro. Por favor, intenta de nuevo.');
+        } catch (err: any) {
+            console.error("Registration error:", err);
+            if (err.message && (err.message.includes('Password should be at least 6 characters') || err.message.includes('weak_password'))) {
+                setError('La contraseña es muy débil. Debe tener al menos 6 caracteres.');
+            } else if (err.message && err.message.includes('User already registered')) {
+                setError('Ya existe una cuenta con este correo electrónico.');
+            } else {
+                setError('Hubo un error en el registro. Por favor, intenta de nuevo.');
+            }
         } finally {
             setIsLoading(false);
         }

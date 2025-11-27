@@ -13,6 +13,8 @@ export const authService = {
             email,
             password: password,
         });
+
+        if (error) throw error;
         // Map Supabase user to our User type
         const sbUser = data.user;
         const metadata = sbUser?.user_metadata || {};
