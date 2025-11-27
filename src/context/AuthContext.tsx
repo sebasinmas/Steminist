@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { authService } from '../services/authService';
-import type { UserRole, Mentee, Mentor, User } from '../types';
+import { supabase } from '../lib/supabase';
+import type { UserRole, User } from '../types';
 
 interface AuthContextType {
     user: User | null;
@@ -17,102 +18,68 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Initialize auth state from localStorage/Token
     useEffect(() => {
-        const initAuth = async () => {
-            const token = localStorage.getItem('authToken');
-            if (token) {
-                try {
-                    const user = await authService.validateToken(token);
-                    setUser(user);
-                } catch (error) {
-                    console.error("Invalid token", error);
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('user'); // Clean up legacy
-                }
-            } else {
-                // Fallback to legacy user storage if no token (optional, for backward compat during dev)
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    try {
-                        setUser(JSON.parse(storedUser));
-                    } catch (e) {
-                        localStorage.removeItem('user');
-                    }
-                }
-            }
+        // Check active session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(mapSessionToUser(session));
             setLoading(false);
-        };
-        initAuth();
+        });
+
+        // Listen for changes
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(mapSessionToUser(session));
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    // Sync user to localStorage (legacy support, can be removed if we fully rely on token)
-    useEffect(() => {
-        if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-        } else {
-            localStorage.removeItem('user');
-        }
-    }, [user]);
+    const mapSessionToUser = (session: any): User | null => {
+        if (!session?.user) return null;
+        const { user: sbUser } = session;
+        const metadata = sbUser.user_metadata || {};
+
+        return {
+            id: sbUser.id,
+            name: metadata.name || sbUser.email?.split('@')[0] || 'User',
+            email: sbUser.email || '',
+            role: metadata.role || 'mentee',
+            avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
+            expertise: metadata.expertise || [],
+            availability: metadata.availability || {},
+            // Add other fields as needed, potentially with defaults
+            ...metadata
+        } as User;
+    };
 
     const login = async (email: string, password?: string) => {
         try {
-            const { user, token } = await authService.login(email, password);
-            setUser(user);
-            localStorage.setItem('authToken', token);
+            await authService.login(email, password);
+            // State update handled by onAuthStateChange
         } catch (error) {
             console.error("Login failed", error);
             throw error;
         }
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+    const logout = async () => {
+        try {
+            await authService.logout();
+            // State update handled by onAuthStateChange
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
     };
 
     const register = async (data: any, role: 'mentee' | 'mentor') => {
-        console.log(`Registering new ${role}:`, data);
-        // Mock API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        if (role === 'mentor') {
-            const newMentor: Mentor = {
-                id: Date.now(),
-                name: data.name,
-                email: data.email || 'newmentor@example.com',
-                role: 'mentor',
-                avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/1.jpg',
-                title: 'Nueva Mentora',
-                company: 'Tu Compañía',
-                rating: 5.0,
-                reviews: 0,
-                expertise: ['Edita tu perfil para añadir'],
-                longBio: 'Bienvenida a MentorHer. Por favor, completa tu perfil para que las mentoreadas puedan encontrarte.',
-                mentoringTopics: [],
-                availability: {},
-                maxMentees: 2,
-                roleLevel: 'senior',
-            };
-            setUser(newMentor);
-            localStorage.setItem('authToken', 'mock_token_from_register');
-        } else {
-            const newMentee: Mentee = {
-                id: Date.now(),
-                name: data.name,
-                email: data.email || 'newmentee@example.com',
-                role: 'mentee',
-                avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/2.jpg',
-                bio: 'Bienvenida a MentorHer. Completa tu perfil y empieza a buscar mentoras.',
-                expertise: [],
-                mentorshipGoals: [],
-                availability: {},
-                roleLevel: 'entry',
-                neurodivergence: data.neurodivergence || undefined,
-            };
-            setUser(newMentee);
-            localStorage.setItem('authToken', 'mock_token_from_register');
+        try {
+            await authService.register(data.email, data.password || 'password123', data, role);
+            // State update handled by onAuthStateChange
+        } catch (error) {
+            console.error("Registration failed", error);
+            throw error;
         }
     };
 
