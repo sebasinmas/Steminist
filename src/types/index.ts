@@ -22,7 +22,7 @@ export interface Link {
 }
 
 export interface BaseUser {
-  id: number;
+  id: number | string;
   name: string;
   email: string;
   role: UserRole; // Reverted to role
