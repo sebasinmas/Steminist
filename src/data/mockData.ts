@@ -17,6 +17,8 @@ export const mockMentors: Mentor[] = [
     {
         id: 1,
         name: 'Dr. Elena Rodriguez',
+        email: 'mentora@demo.com',
+        role: 'mentor',
         avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/42.jpg',
         title: 'Senior Data Scientist',
         company: 'Innovate AI',
@@ -38,6 +40,8 @@ export const mockMentors: Mentor[] = [
     {
         id: 2,
         name: 'Sofia Chen',
+        email: 'sofia@example.com',
+        role: 'mentor',
         avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/35.jpg',
         title: 'Lead UX/UI Designer',
         company: 'Creative Solutions',
@@ -55,6 +59,8 @@ export const mockMentors: Mentor[] = [
     {
         id: 3,
         name: 'Isabella Garcia',
+        email: 'isabella@example.com',
+        role: 'mentor',
         avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/21.jpg',
         title: 'Ingeniera de Software Principal',
         company: 'TechCorp',
@@ -72,6 +78,8 @@ export const mockMentors: Mentor[] = [
     {
         id: 4,
         name: 'Maria Hernandez',
+        email: 'maria@example.com',
+        role: 'mentor',
         avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/11.jpg',
         title: 'Fundadora y CEO',
         company: 'EcoInnovate',
@@ -94,6 +102,8 @@ export const mockMentors: Mentor[] = [
 export const mockCurrentUserMentee: Mentee = {
     id: 101,
     name: 'Ana Torres',
+    email: 'mentoreada@demo.com',
+    role: 'mentee',
     avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/55.jpg',
     title: 'Estudiante de Ciencias de la Computación',
     company: 'Universidad Nacional',
@@ -118,6 +128,8 @@ export const mockConnectionRequests: ConnectionRequest[] = [
         mentee: {
             id: 102,
             name: 'Laura Gomez',
+            email: 'laura@example.com',
+            role: 'mentee',
             avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/60.jpg',
             bio: 'Interesada en la ciencia de datos.',
             expertise: ['Python', 'SQL'],
@@ -133,6 +145,8 @@ export const mockConnectionRequests: ConnectionRequest[] = [
         mentee: {
             id: 103,
             name: 'Carla Diaz',
+            email: 'carla@example.com',
+            role: 'mentee',
             avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/65.jpg',
             bio: 'Estudiante de diseño.',
             expertise: ['Figma', 'Adobe XD'],
@@ -175,7 +189,7 @@ export const mockMentorships: Mentorship[] = [
         status: 'active',
         startDate: '2023-11-01',
         sessions: [
-             { id: 301, sessionNumber: 1, date: '2023-11-10', time: '14:00', duration: 60, status: 'completed', topic: 'Introducción a Machine Learning', menteeGoals: 'Entender conceptos básicos.', attachments: [{ name: 'ML_Fundamentals.pdf', url: '#' }, { name: 'Python_Cheatsheet.pdf', url: '#' }] }
+            { id: 301, sessionNumber: 1, date: '2023-11-10', time: '14:00', duration: 60, status: 'completed', topic: 'Introducción a Machine Learning', menteeGoals: 'Entender conceptos básicos.', attachments: [{ name: 'ML_Fundamentals.pdf', url: '#' }, { name: 'Python_Cheatsheet.pdf', url: '#' }] }
         ]
     }
 ];
@@ -193,7 +207,7 @@ export const mockPendingSessions: Session[] = [
         topic: 'Discusión de Carrera en IA',
         menteeGoals: 'Quiero entender las diferentes rutas profesionales en el campo de la inteligencia artificial.'
     },
-     {
+    {
         id: 902,
         sessionNumber: 1,
         mentor: mockMentors[3],

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
@@ -9,8 +9,12 @@ const LoginPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, isLoggedIn } = useAuth();
     const navigate = useNavigate();
+
+    if (isLoggedIn) {
+        return <Navigate to="/" replace />;
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,8 +23,12 @@ const LoginPage: React.FC = () => {
         try {
             await login(email, password);
             navigate('/', { replace: true });
-        } catch (err) {
-            setError('Credenciales inválidas. Prueba con: mentora@demo.com, mentoreada@demo.com, o admin@admin.cl (pass: admin).');
+        } catch (err: any) {
+            if (err.message === 'Invalid login credentials') {
+                setError('Credenciales incorrectas. Por favor, verifica tu correo y contraseña.');
+            } else {
+                setError('Error al iniciar sesión. Inténtalo de nuevo.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -64,7 +72,7 @@ const LoginPage: React.FC = () => {
                         {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
                     </Button>
                 </form>
-                 <p className="text-center text-sm text-muted-foreground mt-6">
+                <p className="text-center text-sm text-muted-foreground mt-6">
                     ¿No tienes una cuenta?{' '}
                     <Link to="/register" className="font-semibold text-primary hover:underline">
                         Regístrate

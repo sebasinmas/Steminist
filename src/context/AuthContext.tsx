@@ -1,18 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
-import type { UserRole, Mentee, Mentor } from '../types';
-import { mockCurrentUserMentee, mockCurrentMentor } from '../data/mockData';
-
-// A mock admin user for demonstration
-const mockAdminUser = {
-    id: 999,
-    name: 'Admin User',
-    avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/male/74.jpg',
-    expertise: ['Platform Management'],
-    company: 'MentorHer Platform',
-    title: 'Administrator'
-};
-
-export type User = Mentee | Mentor | typeof mockAdminUser;
+import { authService } from '../services/authService';
+import { supabase } from '../lib/supabase';
+import type { UserRole, User } from '../types';
 
 interface AuthContextType {
     user: User | null;
@@ -26,88 +15,79 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(() => {
-        try {
-            const storedUser = localStorage.getItem('user');
-            return storedUser ? JSON.parse(storedUser) : null;
-        } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
-            return null;
-        }
-    });
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-        } else {
-            localStorage.removeItem('user');
-        }
-    }, [user]);
+        // Check active session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(mapSessionToUser(session));
+            setLoading(false);
+        });
+
+        // Listen for changes
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(mapSessionToUser(session));
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const mapSessionToUser = (session: any): User | null => {
+        if (!session?.user) return null;
+        const { user: sbUser } = session;
+        const metadata = sbUser.user_metadata || {};
+
+        return {
+            id: sbUser.id,
+            name: metadata.name || sbUser.email?.split('@')[0] || 'User',
+            email: sbUser.email || '',
+            role: metadata.role || 'mentee',
+            avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
+            expertise: metadata.expertise || [],
+            availability: metadata.availability || {},
+            // Add other fields as needed, potentially with defaults
+            ...metadata
+        } as User;
+    };
 
     const login = async (email: string, password?: string) => {
-        // Mock API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const emailLower = email.toLowerCase();
-        
-        if (emailLower === 'mentora@demo.com') {
-            setUser(mockCurrentMentor);
-        } else if (emailLower === 'mentoreada@demo.com') {
-            setUser(mockCurrentUserMentee);
-        } else if (emailLower === 'admin@demo.com') {
-            setUser(mockAdminUser);
-        } else if (emailLower === 'admin@admin.cl' && password === 'admin') {
-            setUser(mockAdminUser);
-        } else {
-            throw new Error('Invalid credentials');
+        try {
+            await authService.login(email, password);
+            // State update handled by onAuthStateChange
+        } catch (error) {
+            console.error("Login failed", error);
+            throw error;
         }
     };
 
-    const logout = () => {
-        setUser(null);
+    const logout = async () => {
+        try {
+            await authService.logout();
+            // State update handled by onAuthStateChange
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
     };
 
     const register = async (data: any, role: 'mentee' | 'mentor') => {
-        console.log(`Registering new ${role}:`, data);
-        // Mock API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        if (role === 'mentor') {
-            const newMentor: Mentor = {
-                id: Date.now(),
-                name: data.name,
-                avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/1.jpg',
-                title: 'Nueva Mentora',
-                company: 'Tu Compañía',
-                rating: 5.0,
-                reviews: 0,
-                expertise: ['Edita tu perfil para añadir'],
-                longBio: 'Bienvenida a MentorHer. Por favor, completa tu perfil para que las mentoreadas puedan encontrarte.',
-                mentoringTopics: [],
-                availability: {},
-                maxMentees: 2,
-                roleLevel: 'senior',
-            };
-            setUser(newMentor);
-        } else {
-             const newMentee: Mentee = {
-                id: Date.now(),
-                name: data.name,
-                avatarUrl: 'https://xsgames.co/randomusers/assets/avatars/female/2.jpg',
-                bio: 'Bienvenida a MentorHer. Completa tu perfil y empieza a buscar mentoras.',
-                expertise: [],
-                mentorshipGoals: [],
-                availability: {},
-                roleLevel: 'entry',
-                neurodivergence: data.neurodivergence || undefined,
-            };
-            setUser(newMentee);
+        try {
+            await authService.register(data.email, data.password || 'password123', data, role);
+            // State update handled by onAuthStateChange
+        } catch (error) {
+            console.error("Registration failed", error);
+            throw error;
         }
     };
 
     const value = useMemo(() => {
         let role: UserRole | null = null;
         if (user) {
-            if ('reviews' in user) role = 'mentor';
+            if (user.role) role = user.role;
+            else if ('reviews' in user) role = 'mentor';
             else if ('mentorshipGoals' in user) role = 'mentee';
             else if (user.name === 'Admin User') role = 'admin';
         }
@@ -124,7 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return (
         <AuthContext.Provider value={value}>
-            {children}
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

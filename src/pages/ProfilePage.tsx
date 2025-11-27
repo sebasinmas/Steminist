@@ -123,7 +123,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
     const handleSave = () => {
         // In a real app, you would send this data to an API
-        console.log("Saving data:", profileData);
+
         // Here you would also update the user in the AuthContext if it's connected to a backend
         setIsEditing(false);
         addToast('Perfil actualizado con éxito.', 'success');

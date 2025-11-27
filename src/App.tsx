@@ -1,7 +1,7 @@
 
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 
 // FIX: Removed incorrect '.js' extensions from imports to allow module resolution to find the .ts/.tsx files.
 import type { Page, UserRole, Theme, ConnectionStatus } from './types';
@@ -25,13 +25,13 @@ import RegisterPage from './pages/RegisterPage';
 
 const App: React.FC = () => {
     return (
-        <HashRouter>
+        <BrowserRouter>
             <AuthProvider>
                 <ToastProvider>
                     <AppContent />
                 </ToastProvider>
             </AuthProvider>
-        </HashRouter>
+        </BrowserRouter>
     );
 };
 
