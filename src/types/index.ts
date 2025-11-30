@@ -25,13 +25,13 @@ export interface BaseUser {
   id: number | string;
   name: string;
   email: string;
-  role: UserRole; // Reverted to role
+  role: UserRole;
   avatarUrl: string;
-  expertise: string[];
+  interests: string[]; // Renamed from skills
   availability: Record<string, string[]>;
   title?: string;
   company?: string;
-  roleLevel?: 'entry' | 'mid' | 'senior' | 'lead';
+  experience?: 'entry' | 'mid' | 'senior' | 'lead'; // Renamed from expertise
   timezone?: string;
   motivations?: string[];
 }
@@ -42,7 +42,7 @@ export interface Mentor extends BaseUser {
   rating: number;
   reviews: number;
   longBio: string;
-  mentoringTopics: string[];
+  mentorshipGoals: string[]; // Renamed from mentoringTopics
   maxMentees: number;
   links?: Link[];
 }
@@ -126,7 +126,7 @@ export type User = Mentee | Mentor | {
   email: string;
   role: 'admin';
   avatarUrl: string;
-  expertise: string[];
+  interests: string[];
   company: string;
   title: string;
 };

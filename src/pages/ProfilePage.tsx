@@ -7,8 +7,8 @@ import Tooltip from '../components/common/Tooltip';
 import GoogleCalendarButton from '../components/common/GoogleCalendarButton';
 import { PencilIcon, CameraIcon, XIcon, LinkIcon, CalendarIcon } from '../components/common/Icons';
 import AvailabilityCalendarModal from '../components/scheduling/AvailabilityCalendarModal';
-import { MENTORSHIP_GOALS } from '../utils/constants';
 import { useToast } from '../context/ToastContext';
+import { useProfileOptions } from '../hooks/useProfileOptions';
 
 interface ProfilePageProps {
     isPublicView?: boolean;
@@ -18,12 +18,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
     const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState(user);
-    const [newExpertise, setNewExpertise] = useState('');
-    const [newGoal, setNewGoal] = useState('');
     const [newLink, setNewLink] = useState({ title: '', url: '' });
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const { addToast } = useToast();
+    const { interests: interestOptions, mentorshipGoals: goalOptions, loading: optionsLoading } = useProfileOptions();
 
     useEffect(() => {
         setProfileData(user);
@@ -64,7 +63,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         }
     };
 
-    const addTag = (type: 'expertise' | 'mentorshipGoals' | 'mentoringTopics', value: string) => {
+    const addTag = (type: 'interests' | 'mentorshipGoals', value: string) => {
         if (value) {
             setProfileData(prev => {
                 if (!prev) return null;
@@ -77,7 +76,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         }
     };
 
-    const removeTag = (type: 'expertise' | 'mentorshipGoals' | 'mentoringTopics', tagToRemove: string) => {
+    const removeTag = (type: 'interests' | 'mentorshipGoals', tagToRemove: string) => {
         setProfileData(prev => prev ? ({
             ...prev,
             [type]: ((prev as any)[type] || []).filter((tag: string) => tag !== tagToRemove)
@@ -140,9 +139,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
     const TagEditor: React.FC<{
         title: string;
         tags: string[];
-        tagType: 'expertise' | 'mentorshipGoals' | 'mentoringTopics';
+        tagType: 'interests' | 'mentorshipGoals';
         suggestions?: string[];
-    }> = ({ title, tags, tagType, suggestions }) => {
+        restrictedOptions?: string[];
+    }> = ({ title, tags, tagType, suggestions, restrictedOptions }) => {
         const [inputValue, setInputValue] = useState('');
 
         const handleAdd = () => {
@@ -154,6 +154,41 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
         const handleSuggestionClick = (suggestion: string) => {
             addTag(tagType, suggestion);
+        }
+
+        const handleToggleOption = (option: string) => {
+            if ((tags || []).includes(option)) {
+                removeTag(tagType, option);
+            } else {
+                addTag(tagType, option);
+            }
+        };
+
+        if (restrictedOptions) {
+            return (
+                <div className="bg-card p-6 rounded-lg border border-border">
+                    <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">{title}</h2>
+                    {optionsLoading ? (
+                        <p className="text-sm text-muted-foreground">Cargando opciones...</p>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            {restrictedOptions.map(option => (
+                                <button
+                                    key={option}
+                                    onClick={() => isEditing && handleToggleOption(option)}
+                                    disabled={!isEditing}
+                                    className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${(tags || []).includes(option)
+                                        ? 'bg-primary text-primary-foreground border-primary'
+                                        : 'bg-background border-border hover:bg-accent'
+                                        } ${!isEditing ? 'opacity-80 cursor-default' : 'cursor-pointer'}`}
+                                >
+                                    {option}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
         }
 
         return (
@@ -261,8 +296,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         </div>
                     )}
 
-                    <TagEditor title="Áreas de Especialización" tags={profileData.expertise || []} tagType="expertise" />
-                    <TagEditor title={isMentor ? "Temas de Mentoría" : "Mis Objetivos de Mentoría"} tags={(isMentor ? (profileData as Mentor).mentoringTopics : (profileData as Mentee).mentorshipGoals) || []} tagType={isMentor ? 'mentoringTopics' : 'mentorshipGoals'} suggestions={MENTORSHIP_GOALS} />
+                    <TagEditor title="Áreas de Especialización" tags={profileData.interests || []} tagType="interests" restrictedOptions={interestOptions} />
+                    <TagEditor title={isMentor ? "Temas de Mentoría" : "Mis Objetivos de Mentoría"} tags={profileData.mentorshipGoals || []} tagType="mentorshipGoals" restrictedOptions={goalOptions} />
 
                     {isMentor && (
                         <div className="bg-card p-6 rounded-lg border border-border">

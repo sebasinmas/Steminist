@@ -17,7 +17,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
     const [isRequestingConnection, setIsRequestingConnection] = useState(false);
     const navigate = useNavigate();
     const { addToast } = useToast();
-    
+
     const handleSendRequest = (motivationLetter: string) => {
         onSendConnectionRequest(mentor, motivationLetter);
         setIsRequestingConnection(false);
@@ -33,7 +33,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
             case 'connected':
                 return <Button onClick={() => navigate('/dashboard')} size="lg" className="w-full">Ir al Panel para Agendar</Button>;
             case 'declined':
-                 return <Button size="lg" className="w-full" disabled>Conexión Rechazada</Button>;
+                return <Button size="lg" className="w-full" disabled>Conexión Rechazada</Button>;
             default:
                 return null;
         }
@@ -54,7 +54,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
                             <span className="text-muted-foreground"> ({mentor.reviews} reseñas)</span>
                         </div>
                         {connectionStatus === 'connected' && (
-                             <div className="inline-flex items-center gap-2 text-green-500 bg-green-500/10 px-3 py-1 rounded-full text-sm mb-4">
+                            <div className="inline-flex items-center gap-2 text-green-500 bg-green-500/10 px-3 py-1 rounded-full text-sm mb-4">
                                 <CheckCircleIcon />
                                 <span>Conectada</span>
                             </div>
@@ -67,16 +67,16 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Acerca de {mentor.name}</h2>
                         <p className="text-lg text-foreground/90 whitespace-pre-line">{mentor.longBio}</p>
                     </div>
-                    
+
                     {mentor.links && mentor.links.length > 0 && (
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Publicaciones y Enlaces</h2>
                             <div className="space-y-3">
                                 {mentor.links.map((link, index) => (
-                                    <a 
+                                    <a
                                         key={index}
-                                        href={link.url} 
-                                        target="_blank" 
+                                        href={link.url}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-3 text-primary hover:underline bg-secondary/50 p-3 rounded-md transition-colors hover:bg-secondary"
                                     >
@@ -91,10 +91,10 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Áreas de Especialización</h2>
                         <div className="flex flex-wrap">
-                            {mentor.expertise.map(tag => <Tag key={tag} className="text-base px-4 py-2">{tag}</Tag>)}
+                            {mentor.interests.map(tag => <Tag key={tag} className="text-base px-4 py-2">{tag}</Tag>)}
                         </div>
                     </div>
-                     <div>
+                    <div>
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Disponibilidad</h2>
                         <p className="text-muted-foreground mb-4">La mentora está disponible en las siguientes fechas. Los horarios están en tu zona horaria local.</p>
                         <div className="flex flex-wrap gap-4">
