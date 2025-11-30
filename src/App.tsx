@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 
@@ -73,6 +72,25 @@ const AppContent: React.FC = () => {
         } else {
             document.documentElement.classList.remove('dark');
         }
+    }, []);
+
+    // Load mentors from Supabase
+    useEffect(() => {
+        const loadMentors = async () => {
+            try {
+                const { fetchMentors } = await import('./services/mentorService');
+                const realMentors = await fetchMentors();
+                if (realMentors.length > 0) {
+                    console.log('Loaded mentors from Supabase:', realMentors);
+                    setMentors(realMentors);
+                } else {
+                    console.log('No mentors found in Supabase, using mocks.');
+                }
+            } catch (error) {
+                console.error('Failed to load mentors:', error);
+            }
+        };
+        loadMentors();
     }, []);
 
     const toggleTheme = () => {
