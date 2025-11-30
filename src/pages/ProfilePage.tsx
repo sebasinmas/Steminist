@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Mentee, Mentor } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
+import { storageService } from '../services/storageService';
 import Button from '../components/common/Button';
 import Tag from '../components/common/Tag';
 import { PencilIcon, CameraIcon, XIcon, LinkIcon, CalendarIcon } from '../components/common/Icons';
@@ -17,6 +19,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState(user);
     const [newLink, setNewLink] = useState({ title: '', url: '' });
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const { addToast } = useToast();
@@ -50,13 +53,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (event.target?.result) {
-                    setProfileData(prev => prev ? ({ ...prev, avatarUrl: event.target.result as string }) : null);
-                }
-            };
-            reader.readAsDataURL(e.target.files[0]);
+            const file = e.target.files[0];
+            setAvatarFile(file);
+            const objectUrl = URL.createObjectURL(file);
+            setProfileData(prev => prev ? ({ ...prev, avatarUrl: objectUrl }) : null);
         }
     };
 
@@ -119,18 +119,37 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         setIsCalendarOpen(false);
     };
 
-    const handleSave = () => {
-        // In a real app, you would send this data to an API
+    const handleSave = async () => {
+        try {
+            if (!profileData) return;
 
-        // Here you would also update the user in the AuthContext if it's connected to a backend
-        setIsEditing(false);
-        addToast('Perfil actualizado con éxito.', 'success');
+            let newAvatarUrl = profileData.avatarUrl;
+
+            if (avatarFile) {
+                newAvatarUrl = await storageService.uploadAvatar(profileData.id, avatarFile);
+            }
+
+            const { id, email, role, ...metadataUpdates } = profileData as any;
+
+            await authService.updateProfile({
+                ...metadataUpdates,
+                avatarUrl: newAvatarUrl
+            });
+
+            setIsEditing(false);
+            setAvatarFile(null);
+            addToast('Perfil actualizado con éxito.', 'success');
+        } catch (error) {
+            console.error(error);
+            addToast('Error al actualizar el perfil.', 'error');
+        }
     };
 
     const handleCancel = () => {
         setProfileData(user); // Reset changes
         setIsEditing(false);
         setNewLink({ title: '', url: '' });
+        setAvatarFile(null);
     };
 
     const TagEditor: React.FC<{

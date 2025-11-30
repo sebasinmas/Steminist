@@ -58,5 +58,14 @@ export const authService = {
     getUser: async () => {
         const { data: { user } } = await supabase.auth.getUser();
         return user;
+    },
+
+    updateProfile: async (updates: any) => {
+        const { data, error } = await supabase.auth.updateUser({
+            data: updates
+        });
+
+        if (error) throw error;
+        return data.user;
     }
 };
