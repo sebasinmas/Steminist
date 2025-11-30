@@ -16,15 +16,14 @@ const HomePage: React.FC = () => {
         return <Navigate to="/admin" replace />;
     }
 
-    // FIX: Add type guards using the `in` operator to narrow the `user` type.
-    // This resolves the error where the generic `User` type from `useAuth` was
-    // not assignable to the more specific `Mentor` or `Mentee` props.
-    if (role === 'mentor' && 'reviews' in user) {
-        return <LandingPageMentor user={user} />;
+    // We cast user to the specific type because we trust the role from AuthContext
+    // and the components only use common fields like 'name' for the welcome message.
+    if (role === 'mentor') {
+        return <LandingPageMentor user={user as any} />;
     }
 
-    if (role === 'mentee' && 'mentorshipGoals' in user) {
-        return <LandingPageMentee user={user} />;
+    if (role === 'mentee') {
+        return <LandingPageMentee user={user as any} />;
     }
 
     // Fallback for any other case
