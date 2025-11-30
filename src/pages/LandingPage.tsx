@@ -2,10 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
-import { MENTORSHIP_CATEGORIES } from '../utils/constants';
+import { useProfileOptions } from '../hooks/useProfileOptions';
 import ImpactMetrics from '../components/landing/ImpactMetrics';
 
 const LandingPage: React.FC = () => {
+    const { interests } = useProfileOptions();
+
     return (
         <>
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
@@ -47,7 +49,7 @@ const LandingPage: React.FC = () => {
                 <div className="max-w-5xl mx-auto mt-16">
                     <h3 className="text-2xl font-bold mb-6">Explora Mentorías en...</h3>
                     <div className="flex flex-wrap justify-center gap-3">
-                        {MENTORSHIP_CATEGORIES.slice(0, 7).map(category => (
+                        {interests.slice(0, 7).map(category => (
                             <span key={category} className="bg-secondary text-secondary-foreground text-sm font-semibold px-4 py-2 rounded-full">
                                 {category}
                             </span>
