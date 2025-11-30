@@ -3,6 +3,8 @@ import type { Mentee, Mentor } from '../types';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
 import Tag from '../components/common/Tag';
+import Tooltip from '../components/common/Tooltip';
+import GoogleCalendarButton from '../components/common/GoogleCalendarButton';
 import { PencilIcon, CameraIcon, XIcon, LinkIcon, CalendarIcon } from '../components/common/Icons';
 import AvailabilityCalendarModal from '../components/scheduling/AvailabilityCalendarModal';
 import { MENTORSHIP_GOALS } from '../utils/constants';
@@ -274,10 +276,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Mi Disponibilidad</h2>
                         <p className="text-muted-foreground mb-4">{isMentor ? 'Indica a las mentoreadas cuándo estás disponible.' : 'Indica a las mentoras cuándo estás disponible.'}</p>
                         <div className="space-y-3">{Object.entries(profileData.availability || {}).map(([date, times]) => (<div key={date} className="bg-secondary p-3 rounded-md flex items-center justify-between"><p className="font-semibold">{new Date(date).toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}</p><div className="flex gap-2 flex-wrap">{(times as string[]).map(time => <Tag key={time}>{time}</Tag>)}</div></div>))}</div>
-                        {!isPublicView && (<div className="flex flex-wrap items-center gap-4 mt-4">{isEditing && (<Button variant="secondary" onClick={() => setIsCalendarOpen(true)}>Gestionar Disponibilidad</Button>)}<Button variant="secondary" className="flex items-center" onClick={() => addToast('Próximamente: Integración con Google Calendar.', 'info')}><CalendarIcon className="mr-2 h-5 w-5" />Sincronizar con Google Calendar</Button></div>)}
+                        {!isPublicView && (<div className="flex flex-wrap items-center gap-4 mt-4">{isEditing && (<Button variant="secondary" onClick={() => setIsCalendarOpen(true)}>Gestionar Disponibilidad</Button>)}<Tooltip position="right" content="Al sincronizar, todas tus sesiones agendadas se agregarán a tu calendario de Google"><GoogleCalendarButton></GoogleCalendarButton></Tooltip></div>)}
                     </div>
                 </div>
             </div>
+            
             <AvailabilityCalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} currentAvailability={profileData.availability || {}} onSave={handleAvailabilitySave} />
         </div>
     );
