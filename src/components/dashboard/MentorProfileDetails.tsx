@@ -25,24 +25,24 @@ const MentorProfileDetails: React.FC<MentorProfileDetailsProps> = ({ mentor }) =
                 <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Sobre Mí</h3>
                 <p className="text-foreground/90 whitespace-pre-line text-sm">{mentor.longBio}</p>
             </Card>
-            
+
             <Card>
                 <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Especialización</h3>
                 <div className="flex flex-wrap gap-1">
-                    {mentor.expertise.map(tag => <Tag key={tag} className="text-xs px-2 py-1">{tag}</Tag>)}
+                    {mentor.interests.map(tag => <Tag key={tag} className="text-xs px-2 py-1">{tag}</Tag>)}
                 </div>
             </Card>
-            
+
             <Card>
-                 <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Disponibilidad</h3>
-                 <div className="flex flex-wrap gap-2">
+                <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Disponibilidad</h3>
+                <div className="flex flex-wrap gap-2">
                     {Object.keys(mentor.availability).slice(0, 5).map(date => (
                         <div key={date} className="bg-secondary text-secondary-foreground rounded-md p-2 text-center text-xs flex-grow">
                             <p className="font-bold">{new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}</p>
                             <p>{new Date(date).toLocaleDateString('es-ES', { weekday: 'short' })}</p>
                         </div>
                     ))}
-                     {Object.keys(mentor.availability).length > 5 && <div className="text-xs text-muted-foreground p-2 flex items-center justify-center">...y más</div>}
+                    {Object.keys(mentor.availability).length > 5 && <div className="text-xs text-muted-foreground p-2 flex items-center justify-center">...y más</div>}
                 </div>
             </Card>
         </div>

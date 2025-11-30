@@ -63,7 +63,7 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
                         <h3 className="text-lg font-semibold mb-2">1. Temas de Interés</h3>
                         <p className="text-sm text-muted-foreground mb-3">Selecciona los temas que más te interesan de la experiencia de {mentor.name}.</p>
                         <div className="flex flex-wrap gap-2">
-                            {mentor.expertise.map(topic => (
+                            {mentor.interests.map(topic => (
                                 <button
                                     key={topic}
                                     onClick={() => handleTopicToggle(topic)}

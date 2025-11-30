@@ -56,7 +56,7 @@ interface MentorCardProps {
     matchDetails: MatchDetails;
 }
 
-const iconMap: Record<string, React.FC<{className?: string}>> = {
+const iconMap: Record<string, React.FC<{ className?: string }>> = {
     'Expertise': StarIcon,
     'Nivel de Rol': BriefcaseIcon,
     'Comunicación': UsersIcon,
@@ -76,7 +76,7 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
             default: return 'text-red-400';
         }
     };
-    
+
     const handleNavigate = () => {
         navigate(`/mentor/${mentor.id}`);
     };
@@ -85,7 +85,7 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
         <Card className="flex flex-col h-full transition-shadow duration-300 hover:shadow-2xl">
             <div className="flex-grow cursor-pointer" onClick={handleNavigate}>
                 <div className="flex items-start justify-between mb-4">
-                     <div className="flex items-start space-x-4 flex-grow pr-4">
+                    <div className="flex items-start space-x-4 flex-grow pr-4">
                         <img src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
                         <div className="pt-1">
                             <h3 className="text-xl font-bold">{mentor.name}</h3>
@@ -93,18 +93,18 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
                             <p className="text-sm text-muted-foreground">{mentor.company}</p>
                         </div>
                     </div>
-                     <CircularProgress percentage={matchDetails.affinityScore} />
+                    <CircularProgress percentage={matchDetails.affinityScore} />
                 </div>
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{mentor.longBio}</p>
                 <div className="flex flex-wrap gap-2">
-                    {mentor.expertise.slice(0, 3).map(tag => <Tag key={tag}>{tag}</Tag>)}
-                    {mentor.expertise.length > 3 && <Tag>+ {mentor.expertise.length - 3} más</Tag>}
+                    {mentor.interests.slice(0, 3).map(tag => <Tag key={tag}>{tag}</Tag>)}
+                    {mentor.interests.length > 3 && <Tag>+ {mentor.interests.length - 3} más</Tag>}
                 </div>
             </div>
 
             <div className="mt-auto pt-4 border-t border-border">
                 <div className="flex justify-between items-center">
-                    <button 
+                    <button
                         className="text-sm font-semibold text-primary hover:text-primary/80 flex items-center transition-colors"
                         onClick={(e) => { e.stopPropagation(); setIsBreakdownVisible(!isBreakdownVisible); }}
                         aria-expanded={isBreakdownVisible}

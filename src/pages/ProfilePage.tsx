@@ -16,8 +16,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
     const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState(user);
-    const [newExpertise, setNewExpertise] = useState('');
-    const [newGoal, setNewGoal] = useState('');
     const [newLink, setNewLink] = useState({ title: '', url: '' });
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -62,7 +60,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         }
     };
 
-    const addTag = (type: 'expertise' | 'mentorshipGoals' | 'mentoringTopics', value: string) => {
+    const addTag = (type: 'interests' | 'mentorshipGoals', value: string) => {
         if (value) {
             setProfileData(prev => {
                 if (!prev) return null;
@@ -75,7 +73,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         }
     };
 
-    const removeTag = (type: 'expertise' | 'mentorshipGoals' | 'mentoringTopics', tagToRemove: string) => {
+    const removeTag = (type: 'interests' | 'mentorshipGoals', tagToRemove: string) => {
         setProfileData(prev => prev ? ({
             ...prev,
             [type]: ((prev as any)[type] || []).filter((tag: string) => tag !== tagToRemove)
@@ -138,7 +136,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
     const TagEditor: React.FC<{
         title: string;
         tags: string[];
-        tagType: 'expertise' | 'mentorshipGoals' | 'mentoringTopics';
+        tagType: 'interests' | 'mentorshipGoals';
         suggestions?: string[];
     }> = ({ title, tags, tagType, suggestions }) => {
         const [inputValue, setInputValue] = useState('');
@@ -259,8 +257,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         </div>
                     )}
 
-                    <TagEditor title="Áreas de Especialización" tags={profileData.expertise || []} tagType="expertise" />
-                    <TagEditor title={isMentor ? "Temas de Mentoría" : "Mis Objetivos de Mentoría"} tags={(isMentor ? (profileData as Mentor).mentoringTopics : (profileData as Mentee).mentorshipGoals) || []} tagType={isMentor ? 'mentoringTopics' : 'mentorshipGoals'} suggestions={MENTORSHIP_GOALS} />
+                    <TagEditor title="Áreas de Especialización" tags={profileData.interests || []} tagType="interests" />
+                    <TagEditor title={isMentor ? "Temas de Mentoría" : "Mis Objetivos de Mentoría"} tags={profileData.mentorshipGoals || []} tagType="mentorshipGoals" suggestions={MENTORSHIP_GOALS} />
 
                     {isMentor && (
                         <div className="bg-card p-6 rounded-lg border border-border">
