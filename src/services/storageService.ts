@@ -1,15 +1,16 @@
+import { convertToWebP } from '../utils/imageConverter';
 import { supabase } from '../lib/supabase';
 
 export const storageService = {
     uploadAvatar: async (userId: string | number, file: File): Promise<string> => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${userId}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const webpBlob = await convertToWebP(file);
+        const fileName = `${userId}.webp`;
 
         const { error: uploadError } = await supabase.storage
             .from('avatars')
-            .upload(filePath, file, {
-                upsert: true
+            .upload(fileName, webpBlob, {
+                upsert: true,
+                contentType: 'image/webp'
             });
 
         if (uploadError) {
@@ -18,7 +19,7 @@ export const storageService = {
 
         const { data } = supabase.storage
             .from('avatars')
-            .getPublicUrl(filePath);
+            .getPublicUrl(fileName);
 
         return data.publicUrl;
     }
