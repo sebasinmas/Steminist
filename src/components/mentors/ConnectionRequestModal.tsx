@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Mentor } from '../../types';
 import Button from '../common/Button';
-import { MENTORSHIP_GOALS } from '../../utils/constants';
+import { useProfileOptions } from '../../hooks/useProfileOptions';
 
 interface ConnectionRequestModalProps {
     mentor: Mentor;
@@ -11,6 +11,7 @@ interface ConnectionRequestModalProps {
 }
 
 const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor, isOpen, onClose, onSendRequest }) => {
+    const { mentorshipGoals } = useProfileOptions();
     const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [additionalMessage, setAdditionalMessage] = useState('');
@@ -63,7 +64,7 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
                         <h3 className="text-lg font-semibold mb-2">1. Temas de Interés</h3>
                         <p className="text-sm text-muted-foreground mb-3">Selecciona los temas que más te interesan de la experiencia de {mentor.name}.</p>
                         <div className="flex flex-wrap gap-2">
-                            {mentor.expertise.map(topic => (
+                            {mentor.interests.map(topic => (
                                 <button
                                     key={topic}
                                     onClick={() => handleTopicToggle(topic)}
@@ -80,7 +81,7 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
                         <h3 className="text-lg font-semibold mb-2">2. Tus Objetivos</h3>
                         <p className="text-sm text-muted-foreground mb-3">Elige tus principales objetivos para esta mentoría.</p>
                         <div className="space-y-2">
-                            {MENTORSHIP_GOALS.map(goal => (
+                            {mentorshipGoals.map(goal => (
                                 <label key={goal} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer">
                                     <input
                                         type="checkbox"

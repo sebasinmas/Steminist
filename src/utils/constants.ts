@@ -1,14 +1,4 @@
-export const MENTORSHIP_CATEGORIES = [
-    'Investigación',
-    'Gestión de Producto',
-    'Emprendimiento',
-    'Ciencia de Datos',
-    'Ingeniería de Hardware',
-    'Biotecnología',
-    'Desarrollo de Software',
-    'Diseño UX/UI',
-    'Ciberseguridad'
-];
+
 
 export const POSITIVE_AFFIRMATIONS = [
     "Lo estás haciendo genial: los pequeños pasos llevan a grandes logros.",
@@ -19,14 +9,6 @@ export const POSITIVE_AFFIRMATIONS = [
     "Tu perspectiva única es increíblemente valiosa en STEM."
 ];
 
-export const MENTORSHIP_GOALS = [
-    'Orientación profesional',
-    'Desarrollo de habilidades técnicas',
-    'Revisión de CV/Portafolio',
-    'Preparación para entrevistas',
-    'Networking en la industria',
-    'Balance vida-trabajo'
-];
 
 export const MENTOR_SURVEY_QUESTIONS = {
     preparation: '¿Cómo calificarías la preparación de la mentoreada para la sesión?',

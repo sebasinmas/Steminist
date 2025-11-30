@@ -26,7 +26,7 @@ export const authService = {
             role: metadata.role || 'mentee',
             avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
             // Default fields to avoid crashes
-            expertise: [],
+            interests: [],
             availability: {},
         };
 

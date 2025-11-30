@@ -3,10 +3,12 @@ import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import { EyeIcon, EyeOffIcon } from '../components/common/Icons';
 
 const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login, isLoggedIn } = useAuth();
@@ -41,7 +43,6 @@ const LoginPage: React.FC = () => {
                     MentorHer
                 </Link>
                 <h1 className="text-2xl font-bold text-center mb-2">Iniciar Sesión</h1>
-                <p className="text-center text-muted-foreground mb-6">Usa los correos de demo para acceder.</p>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium mb-1">Email de Demo</label>
@@ -57,15 +58,24 @@ const LoginPage: React.FC = () => {
                     </div>
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium mb-1">Contraseña</label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-2 border border-border rounded-md bg-input text-foreground"
-                            placeholder="Cualquier contraseña (o 'admin')"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full p-2 border border-border rounded-md bg-input text-foreground pr-10"
+                                placeholder="Cualquier contraseña (o 'admin')"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground"
+                            >
+                                {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                            </button>
+                        </div>
                     </div>
                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
                     <Button type="submit" className="w-full !mt-6" size="lg" disabled={isLoading}>
