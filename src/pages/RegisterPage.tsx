@@ -3,6 +3,7 @@ import { useNavigate, Link, useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import { EyeIcon, EyeOffIcon } from '../components/common/Icons';
 
 const RegisterPage: React.FC = () => {
     const { role } = useParams<{ role: 'mentee' | 'mentor' }>();
@@ -13,6 +14,7 @@ const RegisterPage: React.FC = () => {
     // Form state
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState('');
     const [neurodivergence, setNeurodivergence] = useState('');
 
@@ -166,14 +168,23 @@ const RegisterPage: React.FC = () => {
                             </div>
                             <div>
                                 <label htmlFor="password" className="block text-sm font-medium mb-1">Contraseña</label>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full p-2 border border-border rounded-md bg-input text-foreground"
-                                    required
-                                />
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full p-2 border border-border rounded-md bg-input text-foreground pr-10"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground"
+                                    >
+                                        {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                                    </button>
+                                </div>
                             </div>
                             {role === 'mentee' && (
                                 <div>
