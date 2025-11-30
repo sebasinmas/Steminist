@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: sbUser.id,
             name: metadata.name || sbUser.email?.split('@')[0] || 'User',
             email: sbUser.email || '',
-            role: metadata.role || 'mentee',
+            role: metadata.role || sbUser.app_metadata?.role || 'mentee',
             avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
             expertise: metadata.expertise || [],
             availability: metadata.availability || {},
