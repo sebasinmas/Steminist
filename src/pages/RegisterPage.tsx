@@ -19,6 +19,7 @@ const RegisterPage: React.FC = () => {
     // Step 2 state
     const [jobTitle, setJobTitle] = useState('');
     const [company, setCompany] = useState('');
+    const [experience, setExperience] = useState('');
     const [interests, setInterests] = useState<string[]>([]);
     const [goals, setGoals] = useState<string[]>([]);
     const [currentInterest, setCurrentInterest] = useState('');
@@ -90,9 +91,9 @@ const RegisterPage: React.FC = () => {
                 neurodivergence,
                 title: jobTitle,
                 company,
+                experience,
                 interests,
-                goals, // This might map to 'mentorshipGoals' or 'motivations' depending on backend
-                mentorshipGoals: goals, // Mapping for consistency
+                mentorshipGoals: goals,
                 motivations: goals // Mapping for consistency
             };
 
@@ -217,10 +218,36 @@ const RegisterPage: React.FC = () => {
                                         placeholder="Ej: Universidad Nacional"
                                     />
                                 </div>
+                                {role === 'mentor' && (
+                                    <div className="md:col-span-2">
+                                        <label htmlFor="experience" className="block text-sm font-medium mb-1">Nivel de Experiencia</label>
+                                        <div className="relative">
+                                            <select
+                                                id="experience"
+                                                value={experience}
+                                                onChange={(e) => setExperience(e.target.value)}
+                                                className="w-full p-2 border border-border rounded-md bg-input text-foreground appearance-none pr-8"
+                                            >
+                                                <option value="">Selecciona tu nivel...</option>
+                                                <option value="entry">Entry (Junior / Inicial)</option>
+                                                <option value="mid">Mid (Semi-Senior / Intermedio)</option>
+                                                <option value="senior">Senior (Avanzado)</option>
+                                                <option value="lead">Lead (Líder / Principal)</option>
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                                <svg className="w-4 h-4 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-2">Tus Intereses Principales (Selecciona o añade)</label>
+                                <label className="block text-sm font-medium mb-2">
+                                    {role === 'mentor' ? 'Áreas de Especialización (Selecciona o añade)' : 'Áreas de Interés (Selecciona o añade)'}
+                                </label>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {suggestedInterests.map(interest => (
                                         <button
@@ -275,7 +302,9 @@ const RegisterPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-2">¿Qué objetivos buscas lograr? (Selecciona o añade)</label>
+                                <label className="block text-sm font-medium mb-2">
+                                    {role === 'mentor' ? 'Temas de Mentoría (Selecciona o añade)' : 'Objetivos de Mentoría (Selecciona o añade)'}
+                                </label>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {suggestedGoals.map(goal => (
                                         <button
