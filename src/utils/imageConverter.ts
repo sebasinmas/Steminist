@@ -1,31 +1,40 @@
 export const convertToWebP = (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    
-    // 1. Crear URL temporal para leer el archivo
-    img.src = URL.createObjectURL(file);
-    
+    // Crear URL temporal
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+
     img.onload = () => {
-      // 2. Crear un Canvas
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
-      
-      // 3. Dibujar la imagen en el canvas
+
       const ctx = canvas.getContext('2d');
       if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
         reject(new Error('No se pudo obtener el contexto del canvas'));
         return;
       }
+
+      // Dibujar imagen
       ctx.drawImage(img, 0, 0);
-      
-      // 4. Exportar como Blob WebP (calidad 0.8)
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error('Error al convertir imagen'));
-      }, 'image/webp', 0.8);
+
+      // Convertir a Blob (WebP)
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(objectUrl); // Limpiar memoria
+          if (blob) resolve(blob);
+          else reject(new Error('Error al convertir la imagen a WebP'));
+        },
+        'image/webp',
+        0.8 // Calidad (0 a 1)
+      );
     };
 
-    img.onerror = (error) => reject(error);
+    img.onerror = (error) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(error);
+    };
   });
 };
