@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {supabase} from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import Button from './Button'; 
 
 const GoogleCalendarButton: React.FC = () => {
@@ -7,28 +7,31 @@ const GoogleCalendarButton: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   const handleLinkCalendar = async () => {
+    console.log("🎬 [Button] Usuario hace clic en 'Conectar Google Calendar'");
+    
     setLoading(true);
     setErrorMsg('');
 
     try {
+      console.log("🔐 [Button] Iniciando flujo OAuth con Google...");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
           scopes: 'https://www.googleapis.com/auth/calendar.events',
           queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+            access_type: 'offline', // OBLIGATORIO para recibir el token
+            prompt: 'consent', // FUERZA a Google a siempre enviar el refresh token
           },
         },
       });
 
       if (error) throw error;
+      console.log("✅ [Button] Redirigiendo a Google...");
 
     } catch (error: unknown) {
-      console.error("Error conectando Google:", error);
+      console.error("❌ [Button] Error en OAuth:", error);
       
-      // Manejo seguro del tipo de error en TypeScript
       let message = 'Error al conectar. Intenta de nuevo.';
       if (error instanceof Error) {
         message = error.message;
@@ -61,6 +64,7 @@ const GoogleCalendarButton: React.FC = () => {
         </span>
       </Button>
 
+      {/* Mensaje de error */}
       {errorMsg && (
         <p className="text-sm text-red-500 font-medium ml-1 animate-pulse">
           {errorMsg}
