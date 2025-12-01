@@ -14,7 +14,7 @@ export const useGoogleTokenCapture = () => {
   useEffect(() => {
     const setupListener = async () => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        
+
         // Reiniciamos referencia si el usuario cierra sesión
         if (event === 'SIGNED_OUT') {
           lastTokenRef.current = null;
@@ -24,7 +24,13 @@ export const useGoogleTokenCapture = () => {
         // Verificamos si Google nos envió un refresh token nuevo
         if (session && session.provider_refresh_token) {
           const newRefreshToken = session.provider_refresh_token;
-          
+          const storedRefreshToken = session.user?.user_metadata?.google_refresh_token;
+
+          // Si el token ya está guardado, es una recarga, no mostramos toast
+          if (newRefreshToken === storedRefreshToken) {
+            return;
+          }
+
           // Evitamos procesar el mismo token múltiples veces en la misma sesión
           if (lastTokenRef.current === newRefreshToken) {
             return;
