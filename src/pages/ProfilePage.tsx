@@ -311,7 +311,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Mi Disponibilidad</h2>
                         <p className="text-muted-foreground mb-4">{isMentor ? 'Indica a las mentoreadas cuándo estás disponible.' : 'Indica a las mentoras cuándo estás disponible.'}</p>
                         <div className="space-y-3">{Object.entries(profileData.availability || {}).map(([date, times]) => (<div key={date} className="bg-secondary p-3 rounded-md flex items-center justify-between"><p className="font-semibold">{new Date(date).toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}</p><div className="flex gap-2 flex-wrap">{(times as string[]).map(time => <Tag key={time}>{time}</Tag>)}</div></div>))}</div>
-                        {!isPublicView && (<div className="flex flex-wrap items-center gap-4 mt-4">{isEditing && (<Button variant="secondary" onClick={() => setIsCalendarOpen(true)}>Gestionar Disponibilidad</Button>)}<Tooltip position="right" content="Al sincronizar, todas tus sesiones agendadas se agregarán a tu calendario de Google"><GoogleCalendarButton></GoogleCalendarButton></Tooltip></div>)}
+                        {!isPublicView && (<div className="flex flex-wrap items-center gap-4 mt-4">{isEditing && (<Button variant="secondary" onClick={() => setIsCalendarOpen(true)}>Gestionar Disponibilidad</Button>)}<GoogleCalendarButton></GoogleCalendarButton></div>)}
                     </div>
                 </div>
             </div>
