@@ -45,7 +45,7 @@ const GoogleCalendarButton: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/profile`,
           scopes: 'https://www.googleapis.com/auth/calendar.events',
           queryParams: {
             access_type: 'offline',

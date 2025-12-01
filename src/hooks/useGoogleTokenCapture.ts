@@ -1,53 +1,52 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../context/ToastContext';
 
 /**
- * Hook que captura el token de refresco de Google cuando el usuario 
- * retorna del flujo OAuth. Se ejecuta al cargar la app.
+ * Hook que captura silenciosamente el token de refresco de Google 
+ * y notifica al usuario cuando la sincronización es exitosa.
  */
 export const useGoogleTokenCapture = () => {
   const subscriptionRef = useRef<any>(null);
   const lastTokenRef = useRef<string | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
-    console.log("🎣 [Global Hook] useGoogleTokenCapture ejecutándose...");
-
     const setupListener = async () => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log("🔄 [Global] Evento:", event);
-
-        // NO hacer nada en eventos de logout
+        
+        // Reiniciamos referencia si el usuario cierra sesión
         if (event === 'SIGNED_OUT') {
-          console.log("🚪 [Global] Usuario cerró sesión");
           lastTokenRef.current = null;
           return;
         }
 
-        // Capturamos si hay un token de proveedor (provider_refresh_token)
+        // Verificamos si Google nos envió un refresh token nuevo
         if (session && session.provider_refresh_token) {
           const newRefreshToken = session.provider_refresh_token;
           
-          // Evitar procesar el mismo token dos veces
+          // Evitamos procesar el mismo token múltiples veces en la misma sesión
           if (lastTokenRef.current === newRefreshToken) {
-            console.log("⏭️  [Global] Token ya fue procesado, saltando");
             return;
           }
 
           lastTokenRef.current = newRefreshToken;
-          console.log("✅ [Global] Nuevo token detectado:", newRefreshToken.substring(0, 30) + "...");
 
           try {
+            // Guardamos el token en los metadatos del usuario
             const { error: metadataError } = await supabase.auth.updateUser({
               data: { google_refresh_token: newRefreshToken }
             });
 
             if (metadataError) {
-              console.error("❌ [Global] Error guardando:", metadataError);
+              console.error("Error guardando token de Google:", metadataError);
+              addToast('No se pudo guardar la sincronización.', 'error');
             } else {
-              console.log("✨ [Global] Token guardado exitosamente");
+              //Mostramos el mensaje al usuario
+              addToast('Sincronización de calendario exitosa', 'success');
             }
           } catch (error) {
-            console.error("❌ [Global] Error en updateUser:", error);
+            console.error("Excepción al actualizar usuario:", error);
           }
         }
       });
@@ -62,5 +61,5 @@ export const useGoogleTokenCapture = () => {
         subscriptionRef.current.unsubscribe();
       }
     };
-  }, []);
+  }, [addToast]);
 };
