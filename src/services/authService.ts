@@ -34,6 +34,7 @@ export const authService = {
     },
 
     register: async (email: string, password: string, data: any, role: UserRole) => {
+        const fullName = data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim();
         const { data: authData, error } = await supabase.auth.signUp({
             email,
             password,
@@ -41,7 +42,7 @@ export const authService = {
                 data: {
                     first_name: data.first_name,
                     last_name: data.last_name,
-                    name: `${data.first_name} ${data.last_name}`,
+                    name: fullName,
                     role: role,
                     ...data
                 }

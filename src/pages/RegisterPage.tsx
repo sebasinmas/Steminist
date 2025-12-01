@@ -69,6 +69,8 @@ const RegisterPage: React.FC = () => {
         setIsLoading(true);
         try {
             const registrationData = {
+                first_name: firstName,
+                last_name: lastName,
                 name: `${firstName} ${lastName}`,
                 email,
                 password,

@@ -9,6 +9,7 @@ import { PencilIcon, CameraIcon, XIcon, LinkIcon, CalendarIcon } from '../compon
 import AvailabilityCalendarModal from '../components/scheduling/AvailabilityCalendarModal';
 import { useToast } from '../context/ToastContext';
 import { useProfileOptions } from '../hooks/useProfileOptions';
+import { supabase } from '../lib/supabase';
 
 interface ProfilePageProps {
     isPublicView?: boolean;
@@ -122,19 +123,47 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         setIsCalendarOpen(false);
     };
 
-    const handleSave = () => {
-        // In a real app, you would send this data to an API
+const handleSave = async () => {
+        if (!profileData) return;
 
-        // Here you would also update the user in the AuthContext if it's connected to a backend
-        setIsEditing(false);
-        // Al guardar, si cambiamos nombre/apellido, actualizamos también el 'name' visual
-        if (profileData && (profileData.first_name || profileData.last_name)) {
-             const newFullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
-             // Aquí iría la lógica para enviar a Supabase:
-             // await supabase.auth.updateUser({ data: { first_name: ..., last_name: ... } })
-             setProfileData({ ...profileData, name: newFullName });
+        try {
+            const firstName = profileData.first_name || '';
+            const lastName = profileData.last_name || '';
+            const newFullName = `${firstName} ${lastName}`.trim();
+
+            const updates = {
+                first_name: firstName,
+                last_name: lastName,
+                name: newFullName, 
+                title: profileData.title,
+                company: profileData.company,
+                interests: profileData.interests,
+                mentorshipGoals: profileData.mentorshipGoals,
+                availability: profileData.availability,
+                
+                bio: (profileData as Mentee).bio,
+                longBio: (profileData as Mentor).longBio,
+                pronouns: (profileData as Mentee).pronouns,
+                neurodivergence: (profileData as Mentee).neurodivergence,
+                links: (profileData as Mentor).links,
+            };
+
+
+            const { error } = await supabase.auth.updateUser({
+                data: updates
+            });
+
+            if (error) throw error;
+
+            setProfileData(prev => prev ? ({ ...prev, name: newFullName }) : null);
+            
+            setIsEditing(false);
+            addToast('Perfil actualizado correctamente', 'success');
+
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            addToast('Error al guardar los cambios en el servidor.', 'error');
         }
-        addToast('Perfil actualizado con éxito.', 'success');
     };
 
     const handleCancel = () => {
