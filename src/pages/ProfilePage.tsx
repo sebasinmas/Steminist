@@ -127,6 +127,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
         // Here you would also update the user in the AuthContext if it's connected to a backend
         setIsEditing(false);
+        // Al guardar, si cambiamos nombre/apellido, actualizamos también el 'name' visual
+        if (profileData && (profileData.first_name || profileData.last_name)) {
+             const newFullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
+             // Aquí iría la lógica para enviar a Supabase:
+             // await supabase.auth.updateUser({ data: { first_name: ..., last_name: ... } })
+             setProfileData({ ...profileData, name: newFullName });
+        }
         addToast('Perfil actualizado con éxito.', 'success');
     };
 
@@ -252,19 +259,36 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                             )}
                         </div>
                         {isEditing ? (
-                            <input type="text" name="name" value={profileData.name} onChange={handleInputChange} className="w-full text-center text-xl font-bold bg-input border border-border rounded-md p-2" />
+                            <div className="space-y-2 mb-2">
+                                <input 
+                                    type="text" 
+                                    name="first_name" 
+                                    placeholder={profileData.first_name || 'Nombre'}
+                                    value={profileData.first_name || ''} 
+                                    onChange={handleInputChange} 
+                                    className="w-full text-center text-lg font-bold bg-input border border-border rounded-md p-2" 
+                                />
+                                <input 
+                                    type="text" 
+                                    name="last_name" 
+                                    placeholder={profileData.last_name || 'Apellido'}
+                                    value={profileData.last_name || ''} 
+                                    onChange={handleInputChange} 
+                                    className="w-full text-center text-lg font-bold bg-input border border-border rounded-md p-2" 
+                                />
+                            </div>
                         ) : (
                             <h1 className="text-xl font-bold">{profileData.name}</h1>
                         )}
                         {isEditing ? (
-                            <input type="text" name="title" value={profileData.title || ''} onChange={handleInputChange} className="w-full text-center text-lg text-primary bg-input border border-border rounded-md p-2 mt-2" />
+                            <input type="text" name="title" placeholder={profileData.title || 'Cargo / Título Profesional'} value={profileData.title || ''} onChange={handleInputChange} className="w-full text-center text-lg text-primary bg-input border border-border rounded-md p-2 mt-2" />
                         ) : (
-                            <p className="text-lg text-primary">{profileData.title}</p>
+                            <p className="text-lg text-primary">{profileData.title || 'Sin Cargo / Título Profesional'}</p>
                         )}
                         {isEditing ? (
-                            <input type="text" name="company" value={profileData.company || ''} onChange={handleInputChange} className="w-full text-center text-md text-muted-foreground bg-input border border-border rounded-md p-2 mt-2" />
+                            <input type="text" name="company" placeholder={profileData.company || 'Empresa / Institución / Área'} value={profileData.company || ''} onChange={handleInputChange} className="w-full text-center text-lg text-muted-foreground bg-input border border-border rounded-md p-2 mt-2" />
                         ) : (
-                            <p className="text-md text-muted-foreground mb-4">{profileData.company}</p>
+                            <p className="text-lg text-muted-foreground mb-4">{profileData.company || 'Sin Empresa / Institución / Área'}</p>
                         )}
                         {isMentor && (<div className="text-lg my-4"><span className="font-bold text-yellow-500">★ {(profileData as Mentor).rating.toFixed(1)}</span><span className="text-muted-foreground"> ({(profileData as Mentor).reviews} reseñas)</span></div>)}
                         {!isEditing && !isPublicView && (<Button onClick={() => setIsEditing(true)} size="lg" className="w-full mt-6 flex items-center justify-center gap-2"><PencilIcon /> Editar Perfil</Button>)}
@@ -275,9 +299,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                     <div className="bg-card p-6 rounded-lg border border-border">
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Sobre Mí</h2>
                         {isEditing ? (
-                            <textarea name={isMentor ? 'longBio' : 'bio'} value={isMentor ? (profileData as Mentor).longBio : (profileData as Mentee).bio || ''} onChange={handleInputChange} rows={6} className="w-full text-lg text-foreground/90 whitespace-pre-line bg-input border border-border rounded-md p-3" />
+                            <textarea name={isMentor ? 'longBio' : 'bio'} value={isMentor ? (profileData as Mentor).longBio : (profileData as Mentee).bio || 'Escribe algo sobre ti...'} onChange={handleInputChange} rows={6} className="w-full text-lg text-foreground/90 whitespace-pre-line bg-input border border-border rounded-md p-3" />
                         ) : (
-                            <p className="text-lg text-foreground/90 whitespace-pre-line">{isMentor ? (profileData as Mentor).longBio : (profileData as Mentee).bio}</p>
+                            <p className="text-lg text-foreground/90 whitespace-pre-line">{isMentor ? (profileData as Mentor).longBio : (profileData as Mentee).bio || 'Sin descripción'}</p>
                         )}
                     </div>
 
@@ -309,9 +333,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
                     <div className="bg-card p-6 rounded-lg border border-border">
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Mi Disponibilidad</h2>
-                        <p className="text-muted-foreground mb-4">{isMentor ? 'Indica a las mentoreadas cuándo estás disponible.' : 'Indica a las mentoras cuándo estás disponible.'}</p>
-                        <div className="space-y-3">{Object.entries(profileData.availability || {}).map(([date, times]) => (<div key={date} className="bg-secondary p-3 rounded-md flex items-center justify-between"><p className="font-semibold">{new Date(date).toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}</p><div className="flex gap-2 flex-wrap">{(times as string[]).map(time => <Tag key={time}>{time}</Tag>)}</div></div>))}</div>
-                        {!isPublicView && (<div className="flex flex-wrap items-center gap-4 mt-4">{isEditing && (<Button variant="secondary" onClick={() => setIsCalendarOpen(true)}>Gestionar Disponibilidad</Button>)}<GoogleCalendarButton></GoogleCalendarButton></div>)}
+                        <p className="text-muted-foreground mb-4">{isMentor ? 'Selecciona los horarios para indicar a las mentoreadas cuándo estás disponible.' : 'Selecciona los horarios para indicar a las mentoras cuándo estás disponible.'}</p>
+                        <div className="space-y-3">
+                            {Object.entries(profileData.availability || {}).map(([date, times]) => (
+                                <div key={date} className="bg-secondary p-3 rounded-md flex items-center justify-between">
+                                    <p className="font-semibold">{new Date(date).toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {(times as string[]).map(time =>
+                                        <Tag key={time}>{time}</Tag>)}
+                                    </div>
+                                </div>))}
+                            </div>
+                            {!isPublicView && (<div className="flex flex-wrap items-center gap-4 mt-4">{isEditing && (<Button variant="secondary" onClick={() => setIsCalendarOpen(true)}>Gestionar Disponibilidad</Button>)}<GoogleCalendarButton></GoogleCalendarButton></div>)}
                     </div>
                 </div>
             </div>

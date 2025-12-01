@@ -39,7 +39,9 @@ export const authService = {
             password,
             options: {
                 data: {
-                    name: data.name,
+                    first_name: data.first_name,
+                    last_name: data.last_name,
+                    name: `${data.first_name} ${data.last_name}`,
                     role: role,
                     ...data
                 }

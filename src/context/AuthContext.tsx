@@ -41,15 +41,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { user: sbUser } = session;
         const metadata = sbUser.user_metadata || {};
 
+        // Lógica para construir el nombre completo
+        const firstName = metadata.first_name || '';
+        const lastName = metadata.last_name || '';
+        const fullName = (firstName && lastName)
+            ? `${firstName} ${lastName}`
+            : (metadata.name || sbUser.email?.split('@')[0] || 'User');
+
         return {
             id: sbUser.id,
-            name: metadata.name || sbUser.email?.split('@')[0] || 'User',
+            name: fullName, // Combinamos para visualización
+            first_name: firstName,
+            last_name: lastName,
             email: sbUser.email || '',
             role: metadata.role || sbUser.app_metadata?.role || 'mentee',
             avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
             interests: metadata.interests || [],
             availability: metadata.availability || {},
-            // Add other fields as needed, potentially with defaults
             ...metadata
         } as User;
     };

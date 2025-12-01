@@ -16,7 +16,8 @@ const RegisterPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [neurodivergence, setNeurodivergence] = useState('');
 
     // Step 2 state
@@ -48,7 +49,8 @@ const RegisterPage: React.FC = () => {
                 setError('La contraseña debe tener al menos 6 caracteres.');
                 return;
             }
-            if (!name || !email || !password) {
+            // CAMBIO: Validación de ambos campos
+            if (!firstName || !lastName || !email || !password) {
                 setError('Por favor completa todos los campos obligatorios.');
                 return;
             }
@@ -67,7 +69,7 @@ const RegisterPage: React.FC = () => {
         setIsLoading(true);
         try {
             const registrationData = {
-                name,
+                name: `${firstName} ${lastName}`,
                 email,
                 password,
                 neurodivergence,
@@ -120,15 +122,28 @@ const RegisterPage: React.FC = () => {
                     {step === 1 && (
                         <>
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium mb-1">Nombre Completo</label>
+                                <label htmlFor="firstName" className="block text-sm font-medium mb-1">Nombre</label>
                                 <input
-                                    id="name"
+                                    id="firstName"
                                     type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
                                     className="w-full p-2 border border-border rounded-md bg-input text-foreground"
                                     required
                                     autoFocus
+                                    placeholder="Tu nombre"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="lastName" className="block text-sm font-medium mb-1">Apellido</label>
+                                <input
+                                    id="lastName"
+                                    type="text"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    className="w-full p-2 border border-border rounded-md bg-input text-foreground"
+                                    required
+                                    placeholder="Tu apellido"
                                 />
                             </div>
                             <div>

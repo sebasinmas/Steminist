@@ -23,15 +23,17 @@ export interface Link {
 
 export interface BaseUser {
   id: number | string;
-  name: string;
+  name: string; // Mantenemos esto como "Nombre Completo" para visualización
+  first_name?: string; // Nuevo campo
+  last_name?: string;  // Nuevo campo
   email: string;
   role: UserRole;
   avatarUrl: string;
-  interests: string[]; // Renamed from skills
+  interests: string[];
   availability: Record<string, string[]>;
   title?: string;
   company?: string;
-  experience?: 'entry' | 'mid' | 'senior' | 'lead'; // Renamed from expertise
+  experience?: 'entry' | 'mid' | 'senior' | 'lead';
   timezone?: string;
   motivations?: string[];
 }
