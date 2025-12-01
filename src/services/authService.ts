@@ -47,6 +47,22 @@ export const authService = {
         });
 
         if (error) throw error;
+
+        // Aseguramos explícitamente que el campo `name` quede en user_metadata.
+
+        try {
+            if (authData?.user) {
+                const { error: updateErr } = await supabase.auth.updateUser({
+                    data: { name: data.name, role }
+                });
+                if (updateErr) {
+                    console.warn('authService.register: warning updating user metadata', updateErr);
+                }
+            }
+        } catch (err) {
+            console.warn('authService.register: failed to update user metadata', err);
+        }
+
         return authData;
     },
 
