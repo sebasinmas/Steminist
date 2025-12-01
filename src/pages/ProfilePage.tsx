@@ -252,9 +252,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                             )}
                         </div>
                         {isEditing ? (
-                            <input type="text" name="name" value={profileData.name} onChange={handleInputChange} className="w-full text-center text-3xl font-bold bg-input border border-border rounded-md p-2" />
+                            <input type="text" name="name" value={profileData.name} onChange={handleInputChange} className="w-full text-center text-xl font-bold bg-input border border-border rounded-md p-2" />
                         ) : (
-                            <h1 className="text-3xl font-bold">{profileData.name}</h1>
+                            <h1 className="text-xl font-bold">{profileData.name}</h1>
                         )}
                         {isEditing ? (
                             <input type="text" name="title" value={profileData.title || ''} onChange={handleInputChange} className="w-full text-center text-lg text-primary bg-input border border-border rounded-md p-2 mt-2" />

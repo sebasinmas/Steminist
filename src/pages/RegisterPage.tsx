@@ -132,7 +132,7 @@ const RegisterPage: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+                                <label htmlFor="Correo Electrónico" className="block text-sm font-medium mb-1">Email</label>
                                 <input
                                     id="email"
                                     type="email"
@@ -140,6 +140,7 @@ const RegisterPage: React.FC = () => {
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full p-2 border border-border rounded-md bg-input text-foreground"
                                     required
+                                    placeholder="Escribe tu correo electrónico"
                                 />
                             </div>
                             <div>
@@ -152,6 +153,7 @@ const RegisterPage: React.FC = () => {
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full p-2 border border-border rounded-md bg-input text-foreground pr-10"
                                         required
+                                        placeholder="Escribe una contraseña"
                                     />
                                     <button
                                         type="button"
@@ -162,21 +164,6 @@ const RegisterPage: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            {role === 'mentee' && (
-                                <div>
-                                    <label htmlFor="neurodivergence" className="block text-sm font-medium mb-1">
-                                        Discapacidad o Neurodivergencia (Opcional)
-                                    </label>
-                                    <input
-                                        id="neurodivergence"
-                                        type="text"
-                                        value={neurodivergence}
-                                        onChange={(e) => setNeurodivergence(e.target.value)}
-                                        className="w-full p-2 border border-border rounded-md bg-input text-foreground"
-                                        placeholder="Ej: TDAH, Dislexia, Espectro Autista"
-                                    />
-                                </div>
-                            )}
                         </>
                     )}
 
@@ -278,6 +265,22 @@ const RegisterPage: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {role === 'mentee' && (
+                                <div className="mt-4">
+                                    <label htmlFor="neurodivergence" className="block text-sm font-medium mb-1">
+                                        Discapacidad o Neurodivergencia (Opcional)
+                                    </label>
+                                    <input
+                                        id="neurodivergence"
+                                        type="text"
+                                        value={neurodivergence}
+                                        onChange={(e) => setNeurodivergence(e.target.value)}
+                                        className="w-full p-2 border border-border rounded-md bg-input text-foreground"
+                                        placeholder="Ej: TDAH, Dislexia, Espectro Autista"
+                                    />
+                                </div>
+                            )}
                         </>
                     )}
 
