@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { Mentor, Mentee } from '../types';
 import { useAuth } from '../context/AuthContext';
 import MentorCard from '../components/mentors/MentorCard';
-import { MENTORSHIP_CATEGORIES } from '../utils/constants';
+import { useProfileOptions } from '../hooks/useProfileOptions';
 
 interface MentorSearchPageProps {
     mentors: Mentor[];
@@ -25,20 +24,20 @@ const calculateMatch = (mentor: Mentor, mentee: Mentee): MatchDetails => {
     let score = 0;
     const breakdown: MatchBreakdown[] = [];
 
-    const topicIntersection = (mentor.mentoringTopics || []).filter(topic => (mentee.mentorshipGoals || []).includes(topic));
+    const topicIntersection = (mentor.mentorshipGoals || []).filter(topic => (mentee.mentorshipGoals || []).includes(topic));
     if (topicIntersection.length > 1) {
         score += 40;
-        breakdown.push({ criterion: 'Expertise', status: 'Exacta' });
+        breakdown.push({ criterion: 'Temas de Mentoría', status: 'Exacta' });
     } else if (topicIntersection.length > 0) {
         score += 20;
-        breakdown.push({ criterion: 'Expertise', status: 'Parcial' });
+        breakdown.push({ criterion: 'Temas de Mentoría', status: 'Parcial' });
     }
 
-    if (mentor.roleLevel && mentee.roleLevel) {
+    if (mentor.experience && mentee.experience) {
         const roleHierarchy = { 'entry': 1, 'mid': 2, 'senior': 3, 'lead': 4 };
-        if (roleHierarchy[mentor.roleLevel] >= roleHierarchy[mentee.roleLevel]) {
+        if (roleHierarchy[mentor.experience] >= roleHierarchy[mentee.experience]) {
             score += 20;
-            breakdown.push({ criterion: 'Nivel de Rol', status: 'Exacta' });
+            breakdown.push({ criterion: 'Nivel de Experiencia', status: 'Exacta' });
         }
     }
 
@@ -73,6 +72,7 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const { user } = useAuth();
+    const { interests: interestOptions, loading } = useProfileOptions();
     const currentUser = user as Mentee; // Assuming user is always a Mentee on this page
 
     const mentorsWithAffinity = useMemo(() => {
@@ -82,8 +82,8 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
             const matchesSearch = mentor.name.toLowerCase().includes(searchLower) ||
                 mentor.title.toLowerCase().includes(searchLower) ||
                 mentor.company.toLowerCase().includes(searchLower) ||
-                mentor.expertise.some(e => e.toLowerCase().includes(searchLower));
-            const matchesCategory = selectedCategory === 'all' || mentor.expertise.includes(selectedCategory);
+                mentor.interests.some(e => e.toLowerCase().includes(searchLower));
+            const matchesCategory = selectedCategory === 'all' || mentor.interests.includes(selectedCategory);
             return matchesSearch && matchesCategory;
         });
 
@@ -117,7 +117,7 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
                     className="w-full md:w-64 p-3 border border-border rounded-lg bg-input"
                 >
                     <option value="all">Todas las Categorías</option>
-                    {MENTORSHIP_CATEGORIES.map(category => (
+                    {loading ? <option disabled>Cargando...</option> : interestOptions.map(category => (
                         <option key={category} value={category}>{category}</option>
                     ))}
                 </select>
