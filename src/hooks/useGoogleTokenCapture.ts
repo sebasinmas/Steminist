@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -6,39 +6,61 @@ import { supabase } from '../lib/supabase';
  * retorna del flujo OAuth. Se ejecuta al cargar la app.
  */
 export const useGoogleTokenCapture = () => {
+  const subscriptionRef = useRef<any>(null);
+  const lastTokenRef = useRef<string | null>(null);
+
   useEffect(() => {
     console.log("🎣 [Global Hook] useGoogleTokenCapture ejecutándose...");
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 [Global] Evento de autenticación:", event);
+    const setupListener = async () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log("🔄 [Global] Evento:", event);
 
-      // Capturamos CUALQUIER evento que traiga un token nuevo
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') && session) {
-        console.log("✅ [Global] Evento válido:", event);
+        // NO hacer nada en eventos de logout
+        if (event === 'SIGNED_OUT') {
+          console.log("🚪 [Global] Usuario cerró sesión");
+          lastTokenRef.current = null;
+          return;
+        }
 
-        const newRefreshToken = session.provider_refresh_token;
-        
-        if (newRefreshToken) {
-          console.log("📌 [Global] Token capturado:", newRefreshToken.substring(0, 30) + "...");
+        // Capturamos si hay un token de proveedor (provider_refresh_token)
+        if (session && session.provider_refresh_token) {
+          const newRefreshToken = session.provider_refresh_token;
+          
+          // Evitar procesar el mismo token dos veces
+          if (lastTokenRef.current === newRefreshToken) {
+            console.log("⏭️  [Global] Token ya fue procesado, saltando");
+            return;
+          }
 
-          // Guardamos en user_metadata
-          console.log("💾 [Global] Guardando token en user_metadata...");
-          const { error: metadataError } = await supabase.auth.updateUser({
-            data: { google_refresh_token: newRefreshToken }
-          });
+          lastTokenRef.current = newRefreshToken;
+          console.log("✅ [Global] Nuevo token detectado:", newRefreshToken.substring(0, 30) + "...");
 
-          if (metadataError) {
-            console.error("❌ [Global] Error guardando en user_metadata:", metadataError);
-          } else {
-            console.log("✅ [Global] Token guardado exitosamente");
-            console.log("✨ [Global] Token final:", newRefreshToken.substring(0, 30) + "...");
+          try {
+            const { error: metadataError } = await supabase.auth.updateUser({
+              data: { google_refresh_token: newRefreshToken }
+            });
+
+            if (metadataError) {
+              console.error("❌ [Global] Error guardando:", metadataError);
+            } else {
+              console.log("✨ [Global] Token guardado exitosamente");
+            }
+          } catch (error) {
+            console.error("❌ [Global] Error en updateUser:", error);
           }
         }
-      }
-    });
+      });
+
+      subscriptionRef.current = subscription;
+    };
+
+    setupListener();
 
     return () => {
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
     };
   }, []);
 };
