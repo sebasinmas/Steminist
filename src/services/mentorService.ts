@@ -6,7 +6,7 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
         const { data, error } = await supabase
             .schema('models')
             .from('users')
-            .select('*, mentor_profiles(interests, mentorship_goals)')
+            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company), availability_blocks(day_of_week, start_time, end_time)')
             .eq('role', 'mentor');
 
         if (error) {
@@ -28,6 +28,19 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
             // Handle mentor_profiles being an array (common in Supabase) or object
             const profile = Array.isArray(user.mentor_profiles) ? user.mentor_profiles[0] : user.mentor_profiles;
 
+            // Map availability_blocks to Availability object
+            const availability: { [key: string]: string[] } = {};
+            if (user.availability_blocks && Array.isArray(user.availability_blocks)) {
+                user.availability_blocks.forEach((block: any) => {
+                    const day = block.day_of_week.toLowerCase();
+                    const timeRange = `${block.start_time.slice(0, 5)}-${block.end_time.slice(0, 5)}`;
+                    if (!availability[day]) {
+                        availability[day] = [];
+                    }
+                    availability[day].push(timeRange);
+                });
+            }
+
             return {
                 id: user.id, // Keep UUID from DB
                 name: fullName,
@@ -35,15 +48,15 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
                 role: 'mentor',
                 avatarUrl: user.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (fullName || 'default'),
                 expertise: user.expertise || [],
-                availability: user.availability || {},
-                title: user.title || 'Mentor',
-                company: user.company || 'N/A',
+                availability: availability,
+                title: profile?.title || 'Mentor',
+                company: profile?.company || 'N/A',
                 roleLevel: user.role_level || 'mid',
                 timezone: user.timezone || 'UTC',
                 motivations: user.motivations || [],
                 rating: user.rating || 5.0,
                 reviews: user.reviews || 0,
-                longBio: user.bio || 'No hay biografía disponible.',
+                longBio: profile?.bio || 'No hay biografía disponible.',
                 mentoringTopics: user.mentoring_topics || [],
                 maxMentees: user.max_mentees || 5,
                 links: user.links || [],

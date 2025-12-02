@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { data: profile, error } = await supabase
                 .schema('models')
                 .from('users')
-                .select('*, mentee_profiles(interests, mentorship_goals), mentor_profiles(interests, mentorship_goals)')
+                .select('id, email, first_name, last_name, role, avatar_url, mentee_profiles(interests, mentorship_goals), mentor_profiles(interests, mentorship_goals, bio, title, company), availability_blocks(day_of_week, start_time, end_time)')
                 .eq('id', sessionUser.id)
                 .single();
 
@@ -43,8 +43,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const mentorProfile = profile?.mentor_profiles ? (Array.isArray(profile.mentor_profiles) ? profile.mentor_profiles[0] : profile.mentor_profiles) : null;
 
             // Prioritize specific profile tables for interests/goals
-            const interests = menteeProfile?.interests || mentorProfile?.interests || profile?.interests || metadata.interests || [];
-            const mentorshipGoals = menteeProfile?.mentorship_goals || mentorProfile?.mentorship_goals || profile?.mentorship_goals || metadata.mentorshipGoals || [];
+            const interests = menteeProfile?.interests || mentorProfile?.interests || metadata.interests || [];
+            const mentorshipGoals = menteeProfile?.mentorship_goals || mentorProfile?.mentorship_goals || metadata.mentorshipGoals || [];
+            const bio = mentorProfile?.bio || metadata.bio || '';
+            const title = mentorProfile?.title || metadata.title || '';
+            const company = mentorProfile?.company || metadata.company || '';
+
+            // Map availability_blocks to Availability object
+            const availability: { [key: string]: string[] } = {};
+            if (profile?.availability_blocks && Array.isArray(profile.availability_blocks)) {
+                profile.availability_blocks.forEach((block: any) => {
+                    const day = block.day_of_week.toLowerCase();
+                    const timeRange = `${block.start_time.slice(0, 5)}-${block.end_time.slice(0, 5)}`;
+                    if (!availability[day]) {
+                        availability[day] = [];
+                    }
+                    availability[day].push(timeRange);
+                });
+            }
 
             // Merge session metadata with DB profile
             // DB profile takes precedence for fields that exist there
@@ -55,9 +71,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 role: (profile?.role || metadata.role || 'mentee') as UserRole,
                 avatarUrl: profile?.avatar_url || metadata.avatarUrl || 'https://via.placeholder.com/150',
                 interests: interests,
-                availability: profile?.availability || metadata.availability || {},
+                availability: availability,
                 mentorshipGoals: mentorshipGoals,
-                bio: profile?.bio || metadata.bio || '',
+                bio: bio,
+                title: title,
+                company: company,
                 // Add other fields from profile if needed
                 ...profile,
                 ...metadata // metadata might have some extra fields not in DB yet
