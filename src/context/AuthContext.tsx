@@ -7,6 +7,7 @@ interface AuthContextType {
     user: User | null;
     role: UserRole | null;
     isLoggedIn: boolean;
+    loading: boolean;
     login: (email: string, password?: string) => Promise<void>;
     logout: () => void;
     register: (data: any, role: 'mentee' | 'mentor') => Promise<void>;
@@ -17,10 +18,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const fetchingProfileRef = React.useRef<Set<string>>(new Set()); // Track ongoing fetches
+
+    // Helper function to create a fallback user from session metadata
+    const createFallbackUser = (sessionUser: any): User => {
+        const metadata = sessionUser.user_metadata || {};
+        const role = (metadata.role || 'mentee') as UserRole;
+        
+        // Create base user object
+        const baseUser = {
+            id: sessionUser.id,
+            name: metadata.name || sessionUser.email?.split('@')[0] || 'User',
+            email: sessionUser.email || '',
+            role: role,
+            avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
+            interests: metadata.interests || [],
+            availability: metadata.availability || {},
+        };
+
+        // Return as User type (union type, so we cast it)
+        return baseUser as User;
+    };
 
     const fetchUserProfile = async (sessionUser: any) => {
+        const userId = sessionUser.id;
+        
+        // Prevent duplicate concurrent fetches for the same user
+        if (fetchingProfileRef.current.has(userId)) {
+            console.log('⏭️ [AuthContext] Ya hay una consulta en curso para este usuario, omitiendo...');
+            return null;
+        }
+        
+        fetchingProfileRef.current.add(userId);
+        const startTime = performance.now();
+        console.log('🔍 [AuthContext] Iniciando fetchUserProfile para usuario:', userId);
+        
         try {
             // Fetch full profile from models.users
+            console.log('📡 [AuthContext] Consultando base de datos...');
             const { data: profile, error } = await supabase
                 .schema('models')
                 .from('users')
@@ -28,12 +63,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .eq('id', sessionUser.id)
                 .single();
 
+            const elapsedTime = performance.now() - startTime;
+            
             if (error) {
                 // If row not found (PGRST116), it might be a new user or not yet created in the table.
                 // We fallback to session metadata.
-                if (error.code !== 'PGRST116') {
-                    console.error('Error fetching user profile:', error);
+                if (error.code === 'PGRST116') {
+                    console.log(`⚠️ [AuthContext] Usuario no encontrado en DB (${elapsedTime.toFixed(2)}ms) - Usando metadata de sesión`);
+                } else {
+                    console.error(`❌ [AuthContext] Error fetching user profile (${elapsedTime.toFixed(2)}ms):`, error);
                 }
+            } else {
+                console.log(`✅ [AuthContext] Perfil obtenido exitosamente (${elapsedTime.toFixed(2)}ms)`, {
+                    hasProfile: !!profile,
+                    hasMenteeProfile: !!profile?.mentee_profiles,
+                    hasMentorProfile: !!profile?.mentor_profiles,
+                    hasAvailability: !!profile?.availability_blocks
+                });
             }
 
             const metadata = sessionUser.user_metadata || {};
@@ -81,25 +127,68 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 ...metadata // metadata might have some extra fields not in DB yet
             } as User;
 
+            const totalTime = performance.now() - startTime;
+            console.log(`✨ [AuthContext] Usuario mergeado completado (${totalTime.toFixed(2)}ms total)`);
+            fetchingProfileRef.current.delete(userId);
             return mergedUser;
 
         } catch (err) {
-            console.error('Unexpected error in fetchUserProfile:', err);
+            const errorTime = performance.now() - startTime;
+            console.error(`💥 [AuthContext] Error inesperado en fetchUserProfile (${errorTime.toFixed(2)}ms):`, err);
+            fetchingProfileRef.current.delete(userId);
             return null;
         }
     };
 
     useEffect(() => {
-        // Check active session
+        // Check active session - FAST path: set user immediately from session, then fetch full profile
         const initSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                const fullUser = await fetchUserProfile(session.user);
-                setUser(fullUser);
-            } else {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    console.error('Error getting session:', error);
+                    setUser(null);
+                    setLoading(false);
+                    return;
+                }
+
+                if (session?.user) {
+                    // IMMEDIATELY set user from session metadata (fast, no DB call)
+                    console.log('⚡ [AuthContext] Estableciendo usuario básico desde sesión (instantáneo)');
+                    const fallbackUser = createFallbackUser(session.user);
+                    setUser(fallbackUser);
+                    setLoading(false); // Set loading to false immediately so app can render
+                    console.log('✅ [AuthContext] Loading completado, app puede renderizar');
+                    
+                    // Then, in the background, try to fetch full profile
+                    // This doesn't block the UI
+                    console.log('🔄 [AuthContext] Iniciando carga de perfil completo en segundo plano...');
+                    fetchUserProfile(session.user)
+                        .then((fullUser) => {
+                            if (fullUser) {
+                                console.log('📝 [AuthContext] Actualizando usuario con perfil completo');
+                                setUser(fullUser); // Update with full profile if available
+                            } else {
+                                // fullUser is null only if fetch was skipped (duplicate) or failed
+                                // If it was skipped, the original fetch will update the user
+                                // If it failed, we keep the fallback user
+                                console.log('ℹ️ [AuthContext] Consulta omitida o fallida, manteniendo usuario actual');
+                            }
+                        })
+                        .catch((err) => {
+                            console.error('❌ [AuthContext] Error fetching user profile (non-blocking):', err);
+                            // Keep using fallback user, no need to update
+                        });
+                } else {
+                    setUser(null);
+                    setLoading(false);
+                }
+            } catch (err) {
+                console.error('Unexpected error in initSession:', err);
                 setUser(null);
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         initSession();
@@ -108,13 +197,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-                const fullUser = await fetchUserProfile(session.user);
-                setUser(fullUser);
-            } else {
+            try {
+                if (session?.user) {
+                    // Set user immediately from session (fast)
+                    console.log('🔄 [AuthContext] Auth state change - estableciendo usuario básico');
+                    const fallbackUser = createFallbackUser(session.user);
+                    setUser(fallbackUser);
+                    setLoading(false);
+                    
+                    // Then fetch full profile in background (non-blocking)
+                    fetchUserProfile(session.user)
+                        .then((fullUser) => {
+                            if (fullUser) {
+                                console.log('📝 [AuthContext] Auth state change - actualizando con perfil completo');
+                                setUser(fullUser);
+                            }
+                        })
+                        .catch((err) => {
+                            console.error('❌ [AuthContext] Error fetching user profile in auth state change (non-blocking):', err);
+                        });
+                } else {
+                    setUser(null);
+                    setLoading(false);
+                }
+            } catch (err) {
+                console.error('Unexpected error in auth state change:', err);
                 setUser(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => subscription.unsubscribe();
@@ -169,11 +279,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             user,
             role,
             isLoggedIn: !!user,
+            loading,
             login,
             logout,
             register,
         };
-    }, [user]);
+    }, [user, loading]);
 
     return (
         <AuthContext.Provider value={value}>

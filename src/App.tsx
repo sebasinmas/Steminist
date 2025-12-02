@@ -25,7 +25,12 @@ import { fetchMentors } from './services/mentorService';
 
 const App: React.FC = () => {
     return (
-        <BrowserRouter>
+        <BrowserRouter
+            future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+            }}
+        >
             <AuthProvider>
                 <ToastProvider>
                     <AppContent />
