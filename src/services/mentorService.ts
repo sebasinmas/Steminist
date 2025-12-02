@@ -6,7 +6,7 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
         const { data, error } = await supabase
             .schema('models')
             .from('users')
-            .select('id, first_name, last_name, email, avatar_url, timezone')
+            .select('*')
             .eq('role', 'mentor');
 
         if (error) {
@@ -31,22 +31,21 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
                 email: user.email || '',
                 role: 'mentor',
                 avatarUrl: user.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (fullName || 'default'),
-                expertise: [], // Not in the verified query
-                availability: {}, // Default empty
-                title: 'Mentor', // Default
-                company: 'N/A', // Default
-                roleLevel: 'mid', // Default
+                expertise: user.expertise || [],
+                availability: user.availability || {},
+                title: user.title || 'Mentor',
+                company: user.company || 'N/A',
+                roleLevel: user.role_level || 'mid',
                 timezone: user.timezone || 'UTC',
-                motivations: [], // Default
-                rating: 5.0, // Default
-                reviews: 0, // Default
-                longBio: 'No hay biografía disponible.', // Default
-                mentoringTopics: [], // Default
-                maxMentees: 5, // Default
-                links: [],
-                // Adding fields to satisfy potential type mismatches or union types
-                mentorshipGoals: [],
-                interests: []
+                motivations: user.motivations || [],
+                rating: user.rating || 5.0,
+                reviews: user.reviews || 0,
+                longBio: user.bio || 'No hay biografía disponible.',
+                mentoringTopics: user.mentoring_topics || [],
+                maxMentees: user.max_mentees || 5,
+                links: user.links || [],
+                mentorshipGoals: user.mentorship_goals || [],
+                interests: user.interests || []
             } as unknown as Mentor;
         });
 

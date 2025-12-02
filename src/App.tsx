@@ -21,6 +21,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import { fetchMentors } from './services/mentorService';
 
 const App: React.FC = () => {
     return (
@@ -43,10 +44,24 @@ const AppContent: React.FC = () => {
     const [mentorships, setMentorships] = useState<Mentorship[]>(mockMentorships);
     const [pendingSessions, setPendingSessions] = useState<Session[]>(mockPendingSessions);
     const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(mockConnectionRequests);
-    const [mentors, setMentors] = useState<Mentor[]>(mockMentors);
+    const [mentors, setMentors] = useState<Mentor[]>([]);
     const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
     const [mentorConnections, setMentorConnections] = useState<Record<number, ConnectionStatus>>({});
     const [notificationCount, setNotificationCount] = useState<number>(0);
+
+    useEffect(() => {
+        const loadMentors = async () => {
+            if (isLoggedIn) {
+                try {
+                    const data = await fetchMentors();
+                    setMentors(data);
+                } catch (error) {
+                    console.error("Failed to fetch mentors:", error);
+                }
+            }
+        };
+        loadMentors();
+    }, [isLoggedIn]);
 
     useEffect(() => {
         const calculateNotifications = () => {
@@ -74,24 +89,7 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
-    // Load mentors from Supabase
-    useEffect(() => {
-        const loadMentors = async () => {
-            try {
-                const { fetchMentors } = await import('./services/mentorService');
-                const realMentors = await fetchMentors();
-                if (realMentors.length > 0) {
-                    console.log('Loaded mentors from Supabase:', realMentors);
-                    setMentors(realMentors);
-                } else {
-                    console.log('No mentors found in Supabase, using mocks.');
-                }
-            } catch (error) {
-                console.error('Failed to load mentors:', error);
-            }
-        };
-        loadMentors();
-    }, []);
+
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';

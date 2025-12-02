@@ -24,43 +24,41 @@ const calculateMatch = (mentor: Mentor, mentee: Mentee): MatchDetails => {
     let score = 0;
     const breakdown: MatchBreakdown[] = [];
 
-    const topicIntersection = (mentor.mentorshipGoals || []).filter(topic => (mentee.mentorshipGoals || []).includes(topic));
-    if (topicIntersection.length > 1) {
+    // 1. Interests (40%) - Based on intersection of interests
+    const mentorInterests = Array.isArray(mentor.interests) ? mentor.interests : [];
+    const menteeInterests = Array.isArray(mentee.interests) ? mentee.interests : [];
+    const interestIntersection = mentorInterests.filter(i => menteeInterests.includes(i));
+
+    if (interestIntersection.length > 0) {
         score += 40;
-        breakdown.push({ criterion: 'Temas de Mentoría', status: 'Exacta' });
-    } else if (topicIntersection.length > 0) {
-        score += 20;
-        breakdown.push({ criterion: 'Temas de Mentoría', status: 'Parcial' });
+        breakdown.push({ criterion: 'Intereses', status: 'Exacta' });
+    } else {
+        breakdown.push({ criterion: 'Intereses', status: 'No Coincide' });
     }
 
-    if (mentor.experience && mentee.experience) {
-        const roleHierarchy = { 'entry': 1, 'mid': 2, 'senior': 3, 'lead': 4 };
-        if (roleHierarchy[mentor.experience] >= roleHierarchy[mentee.experience]) {
-            score += 20;
-            breakdown.push({ criterion: 'Nivel de Experiencia', status: 'Exacta' });
-        }
+    // 2. Mentorship Goals (35%)
+    const mentorGoals = Array.isArray(mentor.mentorshipGoals) ? mentor.mentorshipGoals : [];
+    const menteeGoals = Array.isArray(mentee.mentorshipGoals) ? mentee.mentorshipGoals : [];
+    const goalIntersection = mentorGoals.filter(g => menteeGoals.includes(g));
+
+    if (goalIntersection.length > 0) {
+        score += 35;
+        breakdown.push({ criterion: 'Objetivos de Mentoría', status: 'Exacta' });
+    } else {
+        breakdown.push({ criterion: 'Objetivos de Mentoría', status: 'No Coincide' });
     }
 
-    if (mentor.timezone && mentee.timezone) {
-        if (mentor.timezone === mentee.timezone) {
-            score += 15;
-            breakdown.push({ criterion: 'Huso Horario', status: 'Exacta' });
-        } else if (mentor.timezone.split('/')[0] === mentee.timezone.split('/')[0]) {
-            score += 5;
-            breakdown.push({ criterion: 'Huso Horario', status: 'Parcial' });
-        }
-    }
+    // 3. Availability (25%)
+    // For now, we check if the mentor has any availability defined. 
+    // In a real scenario, we would match specific times.
+    const hasAvailability = mentor.availability && Object.keys(mentor.availability).length > 0;
 
-    const motivationIntersection = (mentor.motivations || []).filter(m => (mentee.motivations || []).includes(m));
-    if (motivationIntersection.length > 0) {
-        score += 15;
-        breakdown.push({ criterion: 'Motivaciones', status: 'Exacta' });
+    if (hasAvailability) {
+        score += 25;
+        breakdown.push({ criterion: 'Disponibilidad', status: 'Exacta' });
+    } else {
+        breakdown.push({ criterion: 'Disponibilidad', status: 'No Coincide' });
     }
-
-    // These are always considered exact matches for now and contribute to the score
-    breakdown.push({ criterion: 'Comunicación', status: 'Exacta' });
-    breakdown.push({ criterion: 'Disponibilidad', status: 'Exacta' });
-    score += 10;
 
     return {
         affinityScore: Math.min(100, Math.floor(score)),
@@ -76,21 +74,41 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
     const currentUser = user as Mentee; // Assuming user is always a Mentee on this page
 
     const mentorsWithAffinity = useMemo(() => {
-        if (!currentUser) return [];
+        if (!currentUser) {
+            console.log('MentorSearchPage: No current user found.');
+            return [];
+        }
+
+        console.log('MentorSearchPage: Calculating affinity for user:', currentUser);
+        console.log('MentorSearchPage: Mentors to process:', mentors);
+
         const filtered = mentors.filter(mentor => {
             const searchLower = searchTerm.toLowerCase();
+            const mentorInterests = Array.isArray(mentor.interests) ? mentor.interests : [];
+
             const matchesSearch = mentor.name.toLowerCase().includes(searchLower) ||
                 mentor.title.toLowerCase().includes(searchLower) ||
                 mentor.company.toLowerCase().includes(searchLower) ||
-                mentor.interests.some(e => e.toLowerCase().includes(searchLower));
-            const matchesCategory = selectedCategory === 'all' || mentor.interests.includes(selectedCategory);
+                mentorInterests.some(e => typeof e === 'string' && e.toLowerCase().includes(searchLower));
+
+            const matchesCategory = selectedCategory === 'all' || mentorInterests.includes(selectedCategory);
             return matchesSearch && matchesCategory;
         });
 
-        return filtered.map(mentor => ({
-            mentor,
-            matchDetails: calculateMatch(mentor, currentUser)
-        })).sort((a, b) => b.matchDetails.affinityScore - a.matchDetails.affinityScore);
+        return filtered.map(mentor => {
+            try {
+                return {
+                    mentor,
+                    matchDetails: calculateMatch(mentor, currentUser)
+                };
+            } catch (err) {
+                console.error('Error calculating match for mentor:', mentor.id, err);
+                return {
+                    mentor,
+                    matchDetails: { affinityScore: 0, breakdown: [] }
+                };
+            }
+        }).sort((a, b) => b.matchDetails.affinityScore - a.matchDetails.affinityScore);
 
     }, [mentors, searchTerm, selectedCategory, currentUser]);
 
