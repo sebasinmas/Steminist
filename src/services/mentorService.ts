@@ -6,7 +6,7 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
         const { data, error } = await supabase
             .schema('models')
             .from('users')
-            .select('*')
+            .select('*, mentor_profiles(interests, mentorship_goals)')
             .eq('role', 'mentor');
 
         if (error) {
@@ -24,6 +24,9 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
             // but standard is "First Last". User said "last_name is the real name", 
             // which might imply first_name is empty or secondary. We'll use both.
             const fullName = `${firstName} ${lastName}`.trim() || 'Mentor Sin Nombre';
+
+            // Handle mentor_profiles being an array (common in Supabase) or object
+            const profile = Array.isArray(user.mentor_profiles) ? user.mentor_profiles[0] : user.mentor_profiles;
 
             return {
                 id: user.id, // Keep UUID from DB
@@ -44,8 +47,8 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
                 mentoringTopics: user.mentoring_topics || [],
                 maxMentees: user.max_mentees || 5,
                 links: user.links || [],
-                mentorshipGoals: user.mentorship_goals || [],
-                interests: user.interests || []
+                mentorshipGoals: profile?.mentorship_goals || [],
+                interests: profile?.interests || []
             } as unknown as Mentor;
         });
 

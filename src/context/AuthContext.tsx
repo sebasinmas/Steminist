@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { supabase } from '../lib/supabase';
-import type { UserRole, User, Mentee, Mentor } from '../types';
+import type { UserRole, User } from '../types';
 
 interface AuthContextType {
     user: User | null;
@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { data: profile, error } = await supabase
                 .schema('models')
                 .from('users')
-                .select('*')
+                .select('*, mentee_profiles(interests, mentorship_goals), mentor_profiles(interests, mentorship_goals)')
                 .eq('id', sessionUser.id)
                 .single();
 
@@ -38,6 +38,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const metadata = sessionUser.user_metadata || {};
 
+            // Helper to extract profile data
+            const menteeProfile = profile?.mentee_profiles ? (Array.isArray(profile.mentee_profiles) ? profile.mentee_profiles[0] : profile.mentee_profiles) : null;
+            const mentorProfile = profile?.mentor_profiles ? (Array.isArray(profile.mentor_profiles) ? profile.mentor_profiles[0] : profile.mentor_profiles) : null;
+
+            // Prioritize specific profile tables for interests/goals
+            const interests = menteeProfile?.interests || mentorProfile?.interests || profile?.interests || metadata.interests || [];
+            const mentorshipGoals = menteeProfile?.mentorship_goals || mentorProfile?.mentorship_goals || profile?.mentorship_goals || metadata.mentorshipGoals || [];
+
             // Merge session metadata with DB profile
             // DB profile takes precedence for fields that exist there
             const mergedUser = {
@@ -46,9 +54,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 name: profile?.first_name ? `${profile.first_name} ${profile.last_name}` : (metadata.name || sessionUser.email?.split('@')[0] || 'User'),
                 role: (profile?.role || metadata.role || 'mentee') as UserRole,
                 avatarUrl: profile?.avatar_url || metadata.avatarUrl || 'https://via.placeholder.com/150',
-                interests: profile?.interests || metadata.interests || [],
+                interests: interests,
                 availability: profile?.availability || metadata.availability || {},
-                mentorshipGoals: profile?.mentorship_goals || metadata.mentorshipGoals || [],
+                mentorshipGoals: mentorshipGoals,
                 bio: profile?.bio || metadata.bio || '',
                 // Add other fields from profile if needed
                 ...profile,
