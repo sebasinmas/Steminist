@@ -43,17 +43,16 @@ const LoginPage: React.FC = () => {
                     MentorHer
                 </Link>
                 <h1 className="text-2xl font-bold text-center mb-2">Iniciar Sesión</h1>
-                <p className="text-center text-muted-foreground mb-6">Usa los correos de demo para acceder.</p>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium mb-1">Email de Demo</label>
+                        <label htmlFor="email" className="block text-sm font-medium mb-1">Correo Electrónico</label>
                         <input
                             id="email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full p-2 border border-border rounded-md bg-input text-foreground"
-                            placeholder="mentora@demo.com"
+                            placeholder="Escribe tu correo electrónico"
                             required
                         />
                     </div>
@@ -66,7 +65,7 @@ const LoginPage: React.FC = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full p-2 border border-border rounded-md bg-input text-foreground pr-10"
-                                placeholder="Cualquier contraseña (o 'admin')"
+                                placeholder="Escribe tu contraseña"
                                 required
                             />
                             <button

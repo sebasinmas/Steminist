@@ -180,7 +180,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         tags: string[];
         tagType: 'interests' | 'mentorshipGoals';
         suggestions?: string[];
-    }> = ({ title, tags, tagType, suggestions }) => {
+        restrictedOptions?: string[];
+    }> = ({ title, tags, tagType, suggestions, restrictedOptions }) => {
         const [inputValue, setInputValue] = useState('');
 
         const handleAdd = () => {

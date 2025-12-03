@@ -16,7 +16,7 @@ const MentorProfileDetails: React.FC<MentorProfileDetailsProps> = ({ mentor }) =
                 <p className="text-md text-muted-foreground mb-1">{mentor.title}</p>
                 <p className="text-sm text-muted-foreground mb-4">{mentor.company}</p>
                 <div className="text-lg mb-4">
-                    <span className="font-bold text-yellow-500">★ {mentor.rating.toFixed(1)}</span>
+                    <span className="font-bold text-yellow-500">★ {Number(mentor.rating ?? 0).toFixed(1)}</span>
                     <span className="text-muted-foreground"> ({mentor.reviews} reseñas)</span>
                 </div>
             </Card>

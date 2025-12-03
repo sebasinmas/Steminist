@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { Mentor, Mentee } from '../types';
 import { useAuth } from '../context/AuthContext';
 import MentorCard from '../components/mentors/MentorCard';
-import { MENTORSHIP_CATEGORIES } from '../utils/constants';
+import { useProfileOptions } from '../hooks/useProfileOptions';
 
 interface MentorSearchPageProps {
     mentors: Mentor[];
@@ -73,6 +72,7 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const { user } = useAuth();
+    const { interests: interestOptions, loading } = useProfileOptions();
     const currentUser = user as Mentee; // Assuming user is always a Mentee on this page
 
     const mentorsWithAffinity = useMemo(() => {
@@ -117,7 +117,7 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
                     className="w-full md:w-64 p-3 border border-border rounded-lg bg-input"
                 >
                     <option value="all">Todas las Categorías</option>
-                    {MENTORSHIP_CATEGORIES.map(category => (
+                    {loading ? <option disabled>Cargando...</option> : interestOptions.map(category => (
                         <option key={category} value={category}>{category}</option>
                     ))}
                 </select>

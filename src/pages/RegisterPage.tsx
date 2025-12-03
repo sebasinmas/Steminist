@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons';
+import { useProfileOptions } from '../hooks/useProfileOptions';
 
 const RegisterPage: React.FC = () => {
     const { role } = useParams<{ role: 'mentee' | 'mentor' }>();
@@ -15,7 +16,8 @@ const RegisterPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [neurodivergence, setNeurodivergence] = useState('');
 
     // Step 2 state
@@ -24,12 +26,11 @@ const RegisterPage: React.FC = () => {
     const [experience, setExperience] = useState('');
     const [interests, setInterests] = useState<string[]>([]);
     const [goals, setGoals] = useState<string[]>([]);
-    const [currentInterest, setCurrentInterest] = useState('');
-    const [currentGoal, setCurrentGoal] = useState('');
 
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { register, isLoggedIn } = useAuth();
+    const { interests: interestOptions, mentorshipGoals: goalOptions, loading: optionsLoading } = useProfileOptions();
     const navigate = useNavigate();
 
     if (isLoggedIn) {
@@ -38,26 +39,6 @@ const RegisterPage: React.FC = () => {
     if (!role || !['mentee', 'mentor'].includes(role)) {
         return <Navigate to="/register/mentee" replace />;
     }
-
-    const handleAddTag = (
-        value: string,
-        list: string[],
-        setList: React.Dispatch<React.SetStateAction<string[]>>,
-        setCurrent: React.Dispatch<React.SetStateAction<string>>
-    ) => {
-        if (value.trim() && !list.includes(value.trim())) {
-            setList([...list, value.trim()]);
-            setCurrent('');
-        }
-    };
-
-    const handleRemoveTag = (
-        tagToRemove: string,
-        list: string[],
-        setList: React.Dispatch<React.SetStateAction<string[]>>
-    ) => {
-        setList(list.filter(tag => tag !== tagToRemove));
-    };
 
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,7 +49,8 @@ const RegisterPage: React.FC = () => {
                 setError('La contraseña debe tener al menos 6 caracteres.');
                 return;
             }
-            if (!name || !email || !password) {
+            // CAMBIO: Validación de ambos campos
+            if (!firstName || !lastName || !email || !password) {
                 setError('Por favor completa todos los campos obligatorios.');
                 return;
             }
@@ -87,7 +69,9 @@ const RegisterPage: React.FC = () => {
         setIsLoading(true);
         try {
             const registrationData = {
-                name,
+                first_name: firstName,
+                last_name: lastName,
+                name: `${firstName} ${lastName}`,
                 email,
                 password,
                 neurodivergence,
@@ -118,10 +102,6 @@ const RegisterPage: React.FC = () => {
     const title = role === 'mentor' ? 'Conviértete en Mentora' : 'Crea tu Cuenta';
     const subtitle = step === 1 ? 'Paso 1: Credenciales' : 'Paso 2: Perfil Profesional';
 
-    // Predefined tags for suggestions (optional, can be expanded)
-    const suggestedInterests = ['Desarrollo de Software', 'Ciencia de Datos', 'Diseño UX/UI', 'Gestión de Producto', 'Emprendimiento', 'Ciberseguridad', 'Inteligencia Artificial', 'Biotecnología', 'Ingeniería de Hardware', 'Investigación'];
-    const suggestedGoals = ['Orientación profesional', 'Desarrollo de habilidades técnicas', 'Revisión de CV/Portafolio', 'Preparación para entrevistas', 'Networking en la industria', 'Balance vida-trabajo', 'Liderazgo de equipos', 'Retorno al trabajo'];
-
     return (
         <div className="container mx-auto flex items-center justify-center min-h-screen px-4 py-8">
             <Card className="max-w-lg w-full">
@@ -144,19 +124,32 @@ const RegisterPage: React.FC = () => {
                     {step === 1 && (
                         <>
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium mb-1">Nombre Completo</label>
+                                <label htmlFor="firstName" className="block text-sm font-medium mb-1">Nombre</label>
                                 <input
-                                    id="name"
+                                    id="firstName"
                                     type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
                                     className="w-full p-2 border border-border rounded-md bg-input text-foreground"
                                     required
                                     autoFocus
+                                    placeholder="Tu nombre"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+                                <label htmlFor="lastName" className="block text-sm font-medium mb-1">Apellido</label>
+                                <input
+                                    id="lastName"
+                                    type="text"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    className="w-full p-2 border border-border rounded-md bg-input text-foreground"
+                                    required
+                                    placeholder="Tu apellido"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="Correo Electrónico" className="block text-sm font-medium mb-1">Email</label>
                                 <input
                                     id="email"
                                     type="email"
@@ -164,6 +157,7 @@ const RegisterPage: React.FC = () => {
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full p-2 border border-border rounded-md bg-input text-foreground"
                                     required
+                                    placeholder="Escribe tu correo electrónico"
                                 />
                             </div>
                             <div>
@@ -176,6 +170,7 @@ const RegisterPage: React.FC = () => {
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full p-2 border border-border rounded-md bg-input text-foreground pr-10"
                                         required
+                                        placeholder="Escribe una contraseña"
                                     />
                                     <button
                                         type="button"
@@ -186,21 +181,6 @@ const RegisterPage: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            {role === 'mentee' && (
-                                <div>
-                                    <label htmlFor="neurodivergence" className="block text-sm font-medium mb-1">
-                                        Discapacidad o Neurodivergencia (Opcional)
-                                    </label>
-                                    <input
-                                        id="neurodivergence"
-                                        type="text"
-                                        value={neurodivergence}
-                                        onChange={(e) => setNeurodivergence(e.target.value)}
-                                        className="w-full p-2 border border-border rounded-md bg-input text-foreground"
-                                        placeholder="Ej: TDAH, Dislexia, Espectro Autista"
-                                    />
-                                </div>
-                            )}
                         </>
                     )}
 
@@ -257,117 +237,67 @@ const RegisterPage: React.FC = () => {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    {role === 'mentor' ? 'Áreas de Especialización (Selecciona o añade)' : 'Áreas de Interés (Selecciona o añade)'}
+                                    {role === 'mentor' ? 'Áreas de Especialización (Selecciona al menos 2)' : 'Áreas de Interés (Selecciona al menos 2)'}
                                 </label>
                                 <div className="flex flex-wrap gap-2 mb-2">
-                                    {suggestedInterests.map(interest => (
+                                    {optionsLoading ? <p className="text-sm text-muted-foreground">Cargando opciones...</p> : interestOptions.map(interest => (
                                         <button
                                             key={interest}
                                             type="button"
-                                            onClick={() => !interests.includes(interest) && setInterests([...interests, interest])}
+                                            onClick={() => {
+                                                if (interests.includes(interest)) {
+                                                    setInterests(interests.filter(i => i !== interest));
+                                                } else {
+                                                    setInterests([...interests, interest]);
+                                                }
+                                            }}
                                             className={`text-xs px-2 py-1 rounded-full border ${interests.includes(interest) ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-accent'}`}
                                         >
                                             {interest}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={currentInterest}
-                                        onChange={(e) => setCurrentInterest(e.target.value)}
-                                        className="flex-1 p-2 border border-border rounded-md bg-input text-foreground text-sm"
-                                        placeholder="Otro... (ej: Astrofísica)"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleAddTag(currentInterest, interests, setInterests, setCurrentInterest);
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        type="button"
-                                        onClick={() => handleAddTag(currentInterest, interests, setInterests, setCurrentInterest)}
-                                        variant="secondary"
-                                        size="sm"
-                                    >
-                                        Añadir
-                                    </Button>
-                                </div>
-                                {interests.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {interests.map((tag, index) => (
-                                            <span key={index} className="bg-primary/20 text-primary text-xs px-2 py-1 rounded-full flex items-center">
-                                                {tag}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveTag(tag, interests, setInterests)}
-                                                    className="ml-1 hover:text-red-500 focus:outline-none"
-                                                >
-                                                    &times;
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    {role === 'mentor' ? 'Temas de Mentoría (Selecciona o añade)' : 'Objetivos de Mentoría (Selecciona o añade)'}
+                                    {role === 'mentor' ? 'Temas de Mentoría (Selecciona)' : 'Objetivos de Mentoría (Selecciona)'}
                                 </label>
                                 <div className="flex flex-wrap gap-2 mb-2">
-                                    {suggestedGoals.map(goal => (
+                                    {optionsLoading ? <p className="text-sm text-muted-foreground">Cargando opciones...</p> : goalOptions.map(goal => (
                                         <button
                                             key={goal}
                                             type="button"
-                                            onClick={() => !goals.includes(goal) && setGoals([...goals, goal])}
+                                            onClick={() => {
+                                                if (goals.includes(goal)) {
+                                                    setGoals(goals.filter(g => g !== goal));
+                                                } else {
+                                                    setGoals([...goals, goal]);
+                                                }
+                                            }}
                                             className={`text-xs px-2 py-1 rounded-full border ${goals.includes(goal) ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-accent'}`}
                                         >
                                             {goal}
                                         </button>
                                     ))}
                                 </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={currentGoal}
-                                        onChange={(e) => setCurrentGoal(e.target.value)}
-                                        className="flex-1 p-2 border border-border rounded-md bg-input text-foreground text-sm"
-                                        placeholder="Otro... (ej: Liderazgo de equipos)"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleAddTag(currentGoal, goals, setGoals, setCurrentGoal);
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        type="button"
-                                        onClick={() => handleAddTag(currentGoal, goals, setGoals, setCurrentGoal)}
-                                        variant="secondary"
-                                        size="sm"
-                                    >
-                                        Añadir
-                                    </Button>
-                                </div>
-                                {goals.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {goals.map((tag, index) => (
-                                            <span key={index} className="bg-primary/20 text-primary text-xs px-2 py-1 rounded-full flex items-center">
-                                                {tag}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveTag(tag, goals, setGoals)}
-                                                    className="ml-1 hover:text-red-500 focus:outline-none"
-                                                >
-                                                    &times;
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
+
+                            {role === 'mentee' && (
+                                <div className="mt-4">
+                                    <label htmlFor="neurodivergence" className="block text-sm font-medium mb-1">
+                                        Discapacidad o Neurodivergencia (Opcional)
+                                    </label>
+                                    <input
+                                        id="neurodivergence"
+                                        type="text"
+                                        value={neurodivergence}
+                                        onChange={(e) => setNeurodivergence(e.target.value)}
+                                        className="w-full p-2 border border-border rounded-md bg-input text-foreground"
+                                        placeholder="Ej: TDAH, Dislexia, Espectro Autista"
+                                    />
+                                </div>
+                            )}
                         </>
                     )}
 
