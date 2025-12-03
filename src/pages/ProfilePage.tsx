@@ -7,7 +7,7 @@ import { CameraIcon, PencilIcon, XIcon, LinkIcon, CalendarIcon } from '../compon
 import { useToast } from '../context/ToastContext';
 import type { Mentor, Mentee } from '../types';
 import AvailabilityCalendarModal from '../components/scheduling/AvailabilityCalendarModal';
-import { MENTORSHIP_GOALS } from '../utils/constants';
+// import { MENTORSHIP_GOALS } from '../utils/constants';
 import Tag from '../components/common/Tag';
 
 interface ProfilePageProps {
@@ -387,7 +387,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         title={isMentor ? "Temas de Mentoría" : "Mis Objetivos"} 
                         tags={localProfile.mentorshipGoals || []} 
                         tagType="mentorshipGoals" 
-                        suggestions={MENTORSHIP_GOALS} 
+                        // suggestions={MENTORSHIP_GOALS} 
                     />
 
                     {/* Enlaces (Solo Mentor) */}
