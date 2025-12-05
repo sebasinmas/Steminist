@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const createFallbackUser = (sessionUser: any): User => {
         const metadata = sessionUser.user_metadata || {};
         const role = (metadata.role || 'mentee') as UserRole;
-        
+
         // Create base user object
         const baseUser = {
             id: sessionUser.id,
@@ -42,17 +42,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const fetchUserProfile = async (sessionUser: any) => {
         const userId = sessionUser.id;
-        
+
         // Prevent duplicate concurrent fetches for the same user
         if (fetchingProfileRef.current.has(userId)) {
             console.log('⏭️ [AuthContext] Ya hay una consulta en curso para este usuario, omitiendo...');
             return null;
         }
-        
+
         fetchingProfileRef.current.add(userId);
         const startTime = performance.now();
         console.log('🔍 [AuthContext] Iniciando fetchUserProfile para usuario:', userId);
-        
+
         try {
             // Fetch full profile from models.users
             console.log('📡 [AuthContext] Consultando base de datos...');
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .single();
 
             const elapsedTime = performance.now() - startTime;
-            
+
             if (error) {
                 // If row not found (PGRST116), it might be a new user or not yet created in the table.
                 // We fallback to session metadata.
@@ -145,7 +145,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const initSession = async () => {
             try {
                 const { data: { session }, error } = await supabase.auth.getSession();
-                
+
                 if (error) {
                     console.error('Error getting session:', error);
                     setUser(null);
@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     setUser(fallbackUser);
                     setLoading(false); // Set loading to false immediately so app can render
                     console.log('✅ [AuthContext] Loading completado, app puede renderizar');
-                    
+
                     // Then, in the background, try to fetch full profile
                     // This doesn't block the UI
                     console.log('🔄 [AuthContext] Iniciando carga de perfil completo en segundo plano...');
@@ -204,7 +204,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const fallbackUser = createFallbackUser(session.user);
                     setUser(fallbackUser);
                     setLoading(false);
-                    
+
                     // Then fetch full profile in background (non-blocking)
                     fetchUserProfile(session.user)
                         .then((fullUser) => {
@@ -229,6 +229,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const mapSessionToUser = (session: any): User | null => {
+        if (!session?.user) return null;
+        const { user: sbUser } = session;
+        const metadata = sbUser.user_metadata || {};
+
+        // Lógica para construir el nombre completo
+        const firstName = metadata.first_name || '';
+        const lastName = metadata.last_name || '';
+        const fullName = (firstName && lastName)
+            ? `${firstName} ${lastName}`
+            : (metadata.name || sbUser.email?.split('@')[0] || 'User');
+
+        return {
+            id: sbUser.id,
+            name: fullName, // Combinamos para visualización
+            first_name: firstName,
+            last_name: lastName,
+            email: sbUser.email || '',
+            role: metadata.role || sbUser.app_metadata?.role || 'mentee',
+            avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
+            interests: metadata.interests || [],
+            availability: metadata.availability || {},
+            ...metadata
+        } as User;
+    };
 
     const login = async (email: string, password?: string) => {
         try {

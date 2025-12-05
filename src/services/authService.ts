@@ -34,12 +34,15 @@ export const authService = {
     },
 
     register: async (email: string, password: string, data: any, role: UserRole) => {
+        const fullName = data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim();
         const { data: authData, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
-                    name: data.name,
+                    first_name: data.first_name,
+                    last_name: data.last_name,
+                    name: fullName,
                     role: role,
                     ...data
                 }
@@ -47,6 +50,22 @@ export const authService = {
         });
 
         if (error) throw error;
+
+        // Aseguramos explícitamente que el campo `name` quede en user_metadata.
+
+        try {
+            if (authData?.user) {
+                const { error: updateErr } = await supabase.auth.updateUser({
+                    data: { name: data.name, role }
+                });
+                if (updateErr) {
+                    console.warn('authService.register: warning updating user metadata', updateErr);
+                }
+            }
+        } catch (err) {
+            console.warn('authService.register: failed to update user metadata', err);
+        }
+
         return authData;
     },
 
@@ -58,5 +77,14 @@ export const authService = {
     getUser: async () => {
         const { data: { user } } = await supabase.auth.getUser();
         return user;
+    },
+
+    updateProfile: async (updates: any) => {
+        const { data, error } = await supabase.auth.updateUser({
+            data: updates
+        });
+
+        if (error) throw error;
+        return data.user;
     }
 };

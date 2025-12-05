@@ -16,7 +16,8 @@ const RegisterPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [neurodivergence, setNeurodivergence] = useState('');
 
     // Step 2 state
@@ -48,7 +49,8 @@ const RegisterPage: React.FC = () => {
                 setError('La contraseña debe tener al menos 6 caracteres.');
                 return;
             }
-            if (!name || !email || !password) {
+            // CAMBIO: Validación de ambos campos
+            if (!firstName || !lastName || !email || !password) {
                 setError('Por favor completa todos los campos obligatorios.');
                 return;
             }
@@ -67,7 +69,9 @@ const RegisterPage: React.FC = () => {
         setIsLoading(true);
         try {
             const registrationData = {
-                name,
+                first_name: firstName,
+                last_name: lastName,
+                name: `${firstName} ${lastName}`,
                 email,
                 password,
                 neurodivergence,
@@ -120,19 +124,32 @@ const RegisterPage: React.FC = () => {
                     {step === 1 && (
                         <>
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium mb-1">Nombre Completo</label>
+                                <label htmlFor="firstName" className="block text-sm font-medium mb-1">Nombre</label>
                                 <input
-                                    id="name"
+                                    id="firstName"
                                     type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
                                     className="w-full p-2 border border-border rounded-md bg-input text-foreground"
                                     required
                                     autoFocus
+                                    placeholder="Tu nombre"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+                                <label htmlFor="lastName" className="block text-sm font-medium mb-1">Apellido</label>
+                                <input
+                                    id="lastName"
+                                    type="text"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    className="w-full p-2 border border-border rounded-md bg-input text-foreground"
+                                    required
+                                    placeholder="Tu apellido"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="Correo Electrónico" className="block text-sm font-medium mb-1">Email</label>
                                 <input
                                     id="email"
                                     type="email"
@@ -140,6 +157,7 @@ const RegisterPage: React.FC = () => {
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full p-2 border border-border rounded-md bg-input text-foreground"
                                     required
+                                    placeholder="Escribe tu correo electrónico"
                                 />
                             </div>
                             <div>
@@ -152,6 +170,7 @@ const RegisterPage: React.FC = () => {
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full p-2 border border-border rounded-md bg-input text-foreground pr-10"
                                         required
+                                        placeholder="Escribe una contraseña"
                                     />
                                     <button
                                         type="button"
@@ -162,21 +181,6 @@ const RegisterPage: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            {role === 'mentee' && (
-                                <div>
-                                    <label htmlFor="neurodivergence" className="block text-sm font-medium mb-1">
-                                        Discapacidad o Neurodivergencia (Opcional)
-                                    </label>
-                                    <input
-                                        id="neurodivergence"
-                                        type="text"
-                                        value={neurodivergence}
-                                        onChange={(e) => setNeurodivergence(e.target.value)}
-                                        className="w-full p-2 border border-border rounded-md bg-input text-foreground"
-                                        placeholder="Ej: TDAH, Dislexia, Espectro Autista"
-                                    />
-                                </div>
-                            )}
                         </>
                     )}
 
@@ -278,6 +282,22 @@ const RegisterPage: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {role === 'mentee' && (
+                                <div className="mt-4">
+                                    <label htmlFor="neurodivergence" className="block text-sm font-medium mb-1">
+                                        Discapacidad o Neurodivergencia (Opcional)
+                                    </label>
+                                    <input
+                                        id="neurodivergence"
+                                        type="text"
+                                        value={neurodivergence}
+                                        onChange={(e) => setNeurodivergence(e.target.value)}
+                                        className="w-full p-2 border border-border rounded-md bg-input text-foreground"
+                                        placeholder="Ej: TDAH, Dislexia, Espectro Autista"
+                                    />
+                                </div>
+                            )}
                         </>
                     )}
 

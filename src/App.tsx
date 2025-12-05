@@ -9,6 +9,7 @@ import { mockMentors, mockCurrentUserMentee, mockConnectionRequests, mockCurrent
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { useGoogleTokenCapture } from './hooks/useGoogleTokenCapture';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Header from './components/layout/Header';
 import HomePage from './pages/HomePage';
@@ -42,6 +43,9 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
     const { isLoggedIn, role, user } = useAuth();
+    
+    // Hook para capturar automáticamente el token de Google
+    useGoogleTokenCapture();
 
     // The entire application state (mock data) is managed here
     // In a real app, this would be handled by a more robust state management library or hooks like React Query
