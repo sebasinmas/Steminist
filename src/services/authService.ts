@@ -1,90 +1,74 @@
 import { supabase } from '../lib/supabase';
-import { User, UserRole } from '../types';
 
 interface LoginResponse {
-    user: User | null;
-    session: any;
-    error?: any;
+  user: any | null;   // Supabase Auth user (no tu tipo User)
+  session: any;
+  error?: any;
 }
 
 export const authService = {
-    login: async (email: string, password: string): Promise<LoginResponse> => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password: password,
-        });
+  // LOGIN: solo autenticación, sin mapear al modelo de tu app
+  login: async (email: string, password: string): Promise<LoginResponse> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-        if (error) throw error;
-        // Map Supabase user to our User type
-        const sbUser = data.user;
-        const metadata = sbUser?.user_metadata || {};
+    if (error) throw error;
 
-        const user: any = {
-            id: sbUser?.id,
-            name: metadata.name || email.split('@')[0],
-            email: email,
-            role: metadata.role || 'mentee',
-            avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
-            // Default fields to avoid crashes
-            interests: [],
-            availability: {},
-        };
+    return {
+      user: data.user,     // Usuario de Supabase Auth
+      session: data.session,
+    };
+  },
 
-        return { user, session: data.session };
-    },
+  // REGISTER: solo creación en Auth.
+  // La inserción en models.users y profiles la hace AuthContext.register
+  register: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-    register: async (email: string, password: string, data: any, role: UserRole) => {
-        const fullName = data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim();
-        const { data: authData, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    first_name: data.first_name,
-                    last_name: data.last_name,
-                    name: fullName,
-                    role: role,
-                    ...data
-                }
-            }
-        });
+    if (error) throw error;
 
-        if (error) throw error;
+    return data;
+  },
 
-        // Aseguramos explícitamente que el campo `name` quede en user_metadata.
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  },
 
-        try {
-            if (authData?.user) {
-                const { error: updateErr } = await supabase.auth.updateUser({
-                    data: { name: data.name, role }
-                });
-                if (updateErr) {
-                    console.warn('authService.register: warning updating user metadata', updateErr);
-                }
-            }
-        } catch (err) {
-            console.warn('authService.register: failed to update user metadata', err);
-        }
+  getUser: async () => {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-        return authData;
-    },
+    if (error) throw error;
+    return user;
+  },
 
-    logout: async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-    },
+  // UPDATE PROFILE (Opcional):
+  // Úsalo SOLO si quieres cambiar campos de Auth (p.ej. email/password).
+  // Para nombre, bio, intereses, etc. usa directamente updates en tus tablas models.*
+  updateProfile: async (updates: {
+    email?: string;
+    password?: string;
+  }) => {
+    const payload: any = {};
 
-    getUser: async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        return user;
-    },
-
-    updateProfile: async (updates: any) => {
-        const { data, error } = await supabase.auth.updateUser({
-            data: updates
-        });
-
-        if (error) throw error;
-        return data.user;
+    if (updates.email) {
+      payload.email = updates.email;
     }
+    if (updates.password) {
+      payload.password = updates.password;
+    }
+
+    const { data, error } = await supabase.auth.updateUser(payload);
+
+    if (error) throw error;
+    return data.user;
+  },
 };
