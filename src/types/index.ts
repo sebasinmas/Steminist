@@ -122,8 +122,9 @@ export interface SupportTicket {
   timestamp: string;
 }
 
-export type User = Mentee | Mentor | {
-  id: number;
+// NUEVO: tipo explícito para usuario admin / base
+export interface AdminUser {
+  id: number | string;
   name: string;
   email: string;
   role: 'admin';
@@ -131,4 +132,7 @@ export type User = Mentee | Mentor | {
   interests: string[];
   company: string;
   title: string;
-};
+}
+
+// User ahora es unión de Mentee | Mentor | AdminUser
+export type User = Mentee | Mentor | AdminUser;
