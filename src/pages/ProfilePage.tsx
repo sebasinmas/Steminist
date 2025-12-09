@@ -340,22 +340,35 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         <p className="text-sm text-muted-foreground">
                             Cargando opciones...
                         </p>
-                    ) : (
+                    ) : isEditing ? (
                         <div className="flex flex-wrap gap-2">
                             {restrictedOptions.map(option => (
                                 <button
                                     key={option}
-                                    onClick={() => isEditing && handleToggleOption(option)}
-                                    disabled={!isEditing}
+                                    onClick={() => handleToggleOption(option)}
                                     className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${(tags || []).includes(option)
                                         ? 'bg-primary text-primary-foreground border-primary'
                                         : 'bg-background border-border hover:bg-accent'
-                                        } ${!isEditing ? 'opacity-80 cursor-default' : 'cursor-pointer'
-                                        }`}
+                                        } cursor-pointer`}
                                 >
                                     {option}
                                 </button>
                             ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            {(tags || []).length > 0 ? (
+                                (tags || []).map(tag => (
+                                    <span
+                                        key={tag}
+                                        className="text-sm px-3 py-1.5 rounded-full bg-primary text-primary-foreground border border-primary"
+                                    >
+                                        {tag}
+                                    </span>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted-foreground">Sin seleccionar</p>
+                            )}
                         </div>
                     )}
                 </div>
