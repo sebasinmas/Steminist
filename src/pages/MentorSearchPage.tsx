@@ -127,7 +127,9 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
                     matchDetails: { affinityScore: 0, breakdown: [] }
                 };
             }
-        }).sort((a, b) => b.matchDetails.affinityScore - a.matchDetails.affinityScore);
+        })
+        .filter(({ matchDetails }) => matchDetails.affinityScore > 0)
+        .sort((a, b) => b.matchDetails.affinityScore - a.matchDetails.affinityScore);
 
     }, [mentors, searchTerm, selectedCategory, currentUser]);
 
