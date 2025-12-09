@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 
@@ -23,10 +22,16 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import { fetchMentors } from './services/mentorService';
 
 const App: React.FC = () => {
     return (
-        <BrowserRouter>
+        <BrowserRouter
+            future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+            }}
+        >
             <AuthProvider>
                 <ToastProvider>
                     <AppContent />
@@ -48,10 +53,24 @@ const AppContent: React.FC = () => {
     const [mentorships, setMentorships] = useState<Mentorship[]>(mockMentorships);
     const [pendingSessions, setPendingSessions] = useState<Session[]>(mockPendingSessions);
     const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(mockConnectionRequests);
-    const [mentors, setMentors] = useState<Mentor[]>(mockMentors);
+    const [mentors, setMentors] = useState<Mentor[]>([]);
     const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
     const [mentorConnections, setMentorConnections] = useState<Record<number, ConnectionStatus>>({});
     const [notificationCount, setNotificationCount] = useState<number>(0);
+
+    useEffect(() => {
+        const loadMentors = async () => {
+            if (isLoggedIn) {
+                try {
+                    const data = await fetchMentors();
+                    setMentors(data);
+                } catch (error) {
+                    console.error("Failed to fetch mentors:", error);
+                }
+            }
+        };
+        loadMentors();
+    }, [isLoggedIn]);
 
     useEffect(() => {
         const calculateNotifications = () => {
@@ -78,6 +97,8 @@ const AppContent: React.FC = () => {
             document.documentElement.classList.remove('dark');
         }
     }, []);
+
+
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';

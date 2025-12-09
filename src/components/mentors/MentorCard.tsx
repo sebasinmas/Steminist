@@ -57,12 +57,9 @@ interface MentorCardProps {
 }
 
 const iconMap: Record<string, React.FC<{ className?: string }>> = {
-    'Expertise': StarIcon,
-    'Nivel de Rol': BriefcaseIcon,
-    'Comunicación': UsersIcon,
+    'Intereses': StarIcon,
+    'Objetivos de Mentoría': BriefcaseIcon,
     'Disponibilidad': CalendarIcon,
-    'Huso Horario': GlobeAltIcon,
-    'Motivaciones': HeartIcon,
 };
 
 const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
@@ -97,8 +94,8 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
                 </div>
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{mentor.longBio}</p>
                 <div className="flex flex-wrap gap-2">
-                    {mentor.interests.slice(0, 3).map(tag => <Tag key={tag}>{tag}</Tag>)}
-                    {mentor.interests.length > 3 && <Tag>+ {mentor.interests.length - 3} más</Tag>}
+                    {Array.isArray(mentor.interests) && mentor.interests.slice(0, 3).map(tag => <Tag key={tag}>{tag}</Tag>)}
+                    {Array.isArray(mentor.interests) && mentor.interests.length > 3 && <Tag>+ {mentor.interests.length - 3} más</Tag>}
                 </div>
             </div>
 
