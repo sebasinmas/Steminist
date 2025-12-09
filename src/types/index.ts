@@ -29,19 +29,19 @@ export interface BaseUser {
   first_name?: string; // Nuevo campo
   last_name?: string;  // Nuevo campo
   email: string;
-  role: UserRole;
   avatarUrl: string;
   interests: Database["models"]["Enums"]["interest_enum"][]; // Ajustado para coincidir con la base de datos
   availability: Record<string, string[]>;
   title?: string;
   company?: string;
-  experience?: 'entry' | 'mid' | 'senior' | 'lead';
+  expertise?: 'entry' | 'mid' | 'senior' | 'lead';
   timezone?: string;
 }
 
 export interface Mentor extends BaseUser {
   title: string;
   company: string;
+  role: 'mentor';
   rating: number;
   reviews: number;
   longBio: string;
@@ -52,6 +52,7 @@ export interface Mentor extends BaseUser {
 
 export interface Mentee extends BaseUser {
   bio: string;
+  role: 'mentee';
   mentorshipGoals: Database["models"]["Tables"]["mentee_profiles"]["Row"]["mentorship_goals"]; // Ajustado para coincidir con la base de datos
   pronouns?: string;
   neurodivergence?: string;
