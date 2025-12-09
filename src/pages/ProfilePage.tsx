@@ -170,10 +170,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
         try {
             const userId = user.id;
-            const { name, avatarUrl } = profileData as any;
-
-            const [firstName, ...restLast] = (name || '').trim().split(' ');
-            const lastName = restLast.join(' ');
+// CAMBIO: Leer directamente nombre y apellido separados
+            const avatarUrl = (profileData as any).avatarUrl;
+            const firstName = (profileData as any).first_name || '';
+            const lastName = (profileData as any).last_name || '';
 
             // 1) Actualizar users
             console.log('[ProfilePage] Updating users row', {
@@ -456,14 +456,25 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 </>
                             )}
                         </div>
-                        {isEditing ? (
-                            <input
-                                type="text"
-                                name="name"
-                                value={profileData.name}
-                                onChange={handleInputChange}
-                                className="w-full text-center text-3xl font-bold bg-input border border-border rounded-md p-2"
-                            />
+                            {isEditing ? (
+                            <div className="space-y-2 mb-2">
+                                <input
+                                    type="text"
+                                    name="first_name"
+                                    placeholder="Nombre"
+                                    value={(profileData as any).first_name || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full text-center text-lg font-bold bg-input border border-border rounded-md p-2"
+                                />
+                                <input
+                                    type="text"
+                                    name="last_name"
+                                    placeholder="Apellido"
+                                    value={(profileData as any).last_name || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full text-center text-lg font-bold bg-input border border-border rounded-md p-2"
+                                />
+                            </div>
                         ) : (
                             <h1 className="text-3xl font-bold">{profileData.name}</h1>
                         )}
@@ -474,9 +485,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 value={profileData.title || ''}
                                 onChange={handleInputChange}
                                 className="w-full text-center text-lg text-primary bg-input border border-border rounded-md p-2 mt-2"
+                                placeholder= "Cargo / Título profesional"
                             />
                         ) : (
-                            <p className="text-lg text-primary">{profileData.title}</p>
+                            <p className="text-lg text-primary">{profileData.title || 'Sin Cargo / Título profesional'}</p>
                         )}
                         {isEditing ? (
                             <input
@@ -485,10 +497,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 value={profileData.company || ''}
                                 onChange={handleInputChange}
                                 className="w-full text-center text-md text-muted-foreground bg-input border border-border rounded-md p-2 mt-2"
+                                placeholder="Empresa / Institución / Área"
                             />
                         ) : (
                             <p className="text-md text-muted-foreground mb-4">
-                                {profileData.company}
+                                {profileData.company || 'Sin Empresa / Institución'}
                             </p>
                         )}
                         {isMentor && (
@@ -550,12 +563,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 onChange={handleInputChange}
                                 rows={6}
                                 className="w-full text-lg text-foreground/90 whitespace-pre-line bg-input border border-border rounded-md p-3"
+                                placeholder="Escribe una breve biografía sobre ti..."
                             />
                         ) : (
                             <p className="text-lg text-foreground/90 whitespace-pre-line">
                                 {isMentor
-                                    ? (profileData as Mentor).longBio
-                                    : (profileData as Mentee).bio}
+                                    ? (profileData as Mentor).longBio || 'Sin biografía añadida.'
+                                    : (profileData as Mentee).bio || 'Sin biografía añadida.'}
                             </p>
                         )}
                     </div>
