@@ -6,7 +6,7 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
         const { data, error } = await supabase
             .schema('models')
             .from('users')
-            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company), availability_blocks(day_of_week, start_time, end_time)')
+            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews), availability_blocks(day_of_week, start_time, end_time)')
             .eq('role', 'mentor');
 
         if (error) {
@@ -54,8 +54,8 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
                 roleLevel: user.role_level || 'mid',
                 timezone: user.timezone || 'UTC',
                 motivations: user.motivations || [],
-                rating: user.rating || 5.0,
-                reviews: user.reviews || 0,
+                rating: profile?.average_rating ?? 0,
+                reviews: profile?.total_reviews ?? 0,
                 longBio: profile?.bio || 'No hay biografía disponible.',
                 mentoringTopics: user.mentoring_topics || [],
                 maxMentees: user.max_mentees || 5,

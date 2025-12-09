@@ -179,7 +179,13 @@ const AppContent: React.FC = () => {
     // Wrapper for MentorProfilePage to handle data fetching based on URL param
     const MentorProfilePageWrapper = () => {
         const { mentorId } = useParams<{ mentorId: string }>();
-        const mentor = mentors.find(m => m.id === parseInt(mentorId || ''));
+        // Handle both numeric and string IDs
+        const mentor = mentors.find(m => {
+            if (typeof m.id === 'number') {
+                return m.id === parseInt(mentorId || '');
+            }
+            return String(m.id) === mentorId;
+        });
         if (!mentor) {
             return <Navigate to="/discover" replace />;
         }
