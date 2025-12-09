@@ -82,12 +82,12 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
         <Card className="flex flex-col h-full transition-shadow duration-300 hover:shadow-2xl">
             <div className="flex-grow cursor-pointer" onClick={handleNavigate}>
                 <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start space-x-4 flex-grow pr-4">
+                    <div className="flex items-start space-x-4 flex-grow pr-4 min-w-0">
                         <img src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
-                        <div className="pt-1">
-                            <h3 className="text-xl font-bold">{mentor.name}</h3>
-                            <p className="text-primary">{mentor.title}</p>
-                            <p className="text-sm text-muted-foreground">{mentor.company}</p>
+                        <div className="pt-1 flex-1 min-w-0">
+                            <h3 className="text-xl font-bold break-words">{mentor.name}</h3>
+                            <p className="text-primary break-words">{mentor.title}</p>
+                            <p className="text-sm text-muted-foreground break-words">{mentor.company}</p>
                         </div>
                     </div>
                     <CircularProgress percentage={matchDetails.affinityScore} />
