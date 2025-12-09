@@ -49,13 +49,32 @@ const calculateMatch = (mentor: Mentor, mentee: Mentee): MatchDetails => {
     }
 
     // 3. Availability (25%)
-    // For now, we check if the mentor has any availability defined. 
-    // In a real scenario, we would match specific times.
-    const hasAvailability = mentor.availability && Object.keys(mentor.availability).length > 0;
-
-    if (hasAvailability) {
+    // Compare availability schedules between mentee and mentor
+    // Count how many time slots match on the same dates
+    const menteeAvailability = mentee.availability || {};
+    const mentorAvailability = mentor.availability || {};
+    
+    let matchingTimeSlots = 0;
+    
+    // Iterate through all dates in mentee's availability
+    Object.keys(menteeAvailability).forEach(date => {
+        // Check if mentor also has availability on this date
+        if (mentorAvailability[date]) {
+            const menteeTimes = menteeAvailability[date];
+            const mentorTimes = mentorAvailability[date];
+            
+            // Count how many time slots match on this date
+            const matchesOnDate = menteeTimes.filter(time => mentorTimes.includes(time)).length;
+            matchingTimeSlots += matchesOnDate;
+        }
+    });
+    
+    // Determine status based on number of matching time slots
+    if (matchingTimeSlots >= 2) {
         score += 25;
         breakdown.push({ criterion: 'Disponibilidad', status: 'Exacta' });
+    } else if (matchingTimeSlots === 1) {
+        breakdown.push({ criterion: 'Disponibilidad', status: 'Parcial' });
     } else {
         breakdown.push({ criterion: 'Disponibilidad', status: 'No Coincide' });
     }
