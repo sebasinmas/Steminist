@@ -16,6 +16,7 @@ interface AuthContextType {
     login: (email: string, password?: string) => Promise<void>;
     logout: () => void;
     register: (data: any, role: 'mentee' | 'mentor') => Promise<void>;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,7 +27,7 @@ async function fetchUserBase(userId: string) {
     const { data, error } = await supabase
         .from('users')
         .select(
-            'id, email, role, avatar_url, timezone, first_name, last_name, created_at, updated_at'
+            'id, email, role, avatar_url, timezone, first_name, last_name, created_at, updated_at',
         )
         .eq('id', userId)
         .maybeSingle(); // evita romper si aún no existe fila
@@ -39,7 +40,7 @@ async function fetchMentorProfile(userId: string) {
     const { data, error } = await supabase
         .from('mentor_profiles')
         .select(
-            'title, company, bio, interests, mentorship_goals, expertise, max_mentees, average_rating, total_reviews, paper_link'
+            'title, company, bio, interests, mentorship_goals, expertise, max_mentees, average_rating, total_reviews, paper_link',
         )
         .eq('user_id', userId)
         .maybeSingle();
@@ -52,7 +53,7 @@ async function fetchMenteeProfile(userId: string) {
     const { data, error } = await supabase
         .from('mentee_profiles')
         .select(
-            'title, company, bio, interests, mentorship_goals, role_level, pronouns, is_neurodivergent, neurodivergence_details'
+            'title, company, bio, interests, mentorship_goals, role_level, pronouns, is_neurodivergent, neurodivergence_details',
         )
         .eq('user_id', userId)
         .maybeSingle();
@@ -186,6 +187,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // helper público para refrescar el usuario desde fuera
+    const refreshUser = async () => {
+        console.log('[AuthContext] refreshUser start');
+        const {
+            data: { session },
+            error: sessionError,
+        } = await supabase.auth.getSession();
+
+        console.log('[AuthContext] getSession result', { session, sessionError });
+
+        if (sessionError) {
+            console.error('[AuthContext] getSession error', sessionError);
+            throw sessionError;
+        }
+
+        if (session?.user) {
+            console.log('[AuthContext] calling enrichUserFromSchema', session.user.id);
+            const fullUser = await enrichUserFromSchema(session.user.id);
+            console.log('[AuthContext] enrichUserFromSchema done', fullUser);
+            setUser(fullUser);
+        } else {
+            console.log('[AuthContext] no session.user, setting user null');
+            setUser(null);
+        }
+
+        console.log('[AuthContext] refreshUser end');
+    };
+
     // Cargar usuario al inicio
     useEffect(() => {
         let active = true;
@@ -233,6 +262,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         });
 
         if (error) throw error;
+
         const fullUser = await enrichUserFromSchema(data.user.id);
         setUser(fullUser);
     };
@@ -242,7 +272,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setUser(null);
     };
 
-    // Dentro de AuthContext.tsx
     const register = async (data: any, role: 'mentee' | 'mentor') => {
         // 1) Crear en Auth
         const { data: authData, error } = await supabase.auth.signUp({
@@ -252,8 +281,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         if (error) throw error;
 
         const userId =
-            authData?.user?.id ||
-            (await supabase.auth.getUser()).data.user?.id;
+            authData?.user?.id || (await supabase.auth.getUser()).data.user?.id;
 
         if (!userId) {
             throw new Error('No se pudo obtener el ID del usuario después del registro');
@@ -274,36 +302,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
         // 3) Crear perfil extendido según rol
         if (role === 'mentor') {
-            const { error: mentorErr } = await supabase
-                .from('mentor_profiles')
-                .insert({
-                    user_id: userId,
-                    title: data.title || '',           // Cargo / Título Profesional
-                    company: data.company || '',       // Empresa / Institución / Área
-                    bio: data.bio || '',               // En el registro no tienes longBio, así que usa data.bio si lo quieres usar o déjalo vacío
-                    interests: data.interests || [],   // Áreas de Interés
-                    mentorship_goals: data.mentorshipGoals || [], // Objetivos de Mentoría
-                    expertise: data.experience || null,          // Puedes mapear experiencia aquí si quieres
-                    max_mentees: data.maxMentees || 3,
-                    paper_link: data.paper_link || null,
-                });
+            const { error: mentorErr } = await supabase.from('mentor_profiles').insert({
+                user_id: userId,
+                title: data.title || '',
+                company: data.company || '',
+                bio: data.bio || '',
+                interests: data.interests || [],
+                mentorship_goals: data.mentorshipGoals || [],
+                expertise: data.experience || null,
+                max_mentees: data.maxMentees || 3,
+                paper_link: data.paper_link || null,
+            });
 
             if (mentorErr) throw mentorErr;
         } else {
-            const { error: menteeErr } = await supabase
-                .from('mentee_profiles')
-                .insert({
-                    user_id: userId,
-                    title: data.title || '',
-                    company: data.company || '',
-                    bio: data.bio || '',
-                    interests: data.interests || [],
-                    mentorship_goals: data.mentorshipGoals || [],
-                    role_level: data.experience || null,
-                    pronouns: data.pronouns || '',
-                    is_neurodivergent: !!data.neurodivergence,
-                    neurodivergence_details: data.neurodivergence || '',
-                });
+            const { error: menteeErr } = await supabase.from('mentee_profiles').insert({
+                user_id: userId,
+                title: data.title || '',
+                company: data.company || '',
+                bio: data.bio || '',
+                interests: data.interests || [],
+                mentorship_goals: data.mentorshipGoals || [],
+                role_level: data.experience || null,
+                pronouns: data.pronouns || '',
+                is_neurodivergent: !!data.neurodivergence,
+                neurodivergence_details: data.neurodivergence || '',
+            });
 
             if (menteeErr) throw menteeErr;
         }
@@ -326,6 +350,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             login,
             logout,
             register,
+            refreshUser,
         };
     }, [user]);
 
