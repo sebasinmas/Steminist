@@ -13,14 +13,14 @@ export const useProfileOptions = () => {
                 setLoading(true);
 
                 // Fetch interests
-                const { data: interestsData, error: interestsError } = await supabase
-                    .rpc('get_enum_values', { enum_name: 'interest_enum' });
+                const { data: interestsData, error: interestsError } = await (supabase
+                    .rpc as any)('get_enum_values', { enum_name: 'interest_enum' });
 
                 if (interestsError) throw interestsError;
 
                 // Fetch mentorship goals
-                const { data: goalsData, error: goalsError } = await supabase
-                    .rpc('get_enum_values', { enum_name: 'mentorship_goal_enum' });
+                const { data: goalsData, error: goalsError } = await (supabase
+                    .rpc as any)('get_enum_values', { enum_name: 'mentorship_goal_enum' });
 
                 if (goalsError) throw goalsError;
 

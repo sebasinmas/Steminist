@@ -31,7 +31,7 @@ export interface BaseUser {
   email: string;
   avatarUrl: string;
   interests: Database["models"]["Enums"]["interest_enum"][]; // Ajustado para coincidir con la base de datos
-  availability: Record<string, string[]>;
+  availability?: Record<string, string[]>;
   title?: string;
   company?: string;
   expertise?: 'entry' | 'mid' | 'senior' | 'lead';
@@ -44,7 +44,7 @@ export interface Mentor extends BaseUser {
   role: 'mentor';
   rating: number;
   reviews: number;
-  longBio: string;
+  longBio?: string;
   mentorshipGoals: Database["models"]["Tables"]["mentor_profiles"]["Row"]["mentorship_goals"]; // Ajustado para coincidir con la base de datos
   maxMentees: number;
   links?: Link[];

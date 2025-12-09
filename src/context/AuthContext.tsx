@@ -23,56 +23,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // --- 1. Formateador Unificado (Evita errores de tipos) ---
     const formatUser = useCallback((base: Database["models"]["Tables"]["users"]["Row"], profile: Database["models"]["Tables"]["mentor_profiles"]["Row"] | Database["models"]["Tables"]["mentee_profiles"]["Row"]): User => {
-        const full_name = `${base.first_name || ''} ${base.last_name || ''}`.trim();
-        const commonData = {
-            id: base.id,
-            name: full_name,
-            email: base.email,
-            first_name: base.first_name,
-            last_name: base.last_name,
-            avatarUrl: base.avatar_url || undefined,
-            timezone: base.timezone,
-            interests: profile?.interests ?? [],
-            availability: {},
-            company: profile?.company ?? '',
-            title: profile?.title ?? '',
-            motivations: [],
-        };
-
-        if (base.role === 'mentor') {
-            return {
-                ...commonData,
+        console.info("[AuthContext] Formateando usuario (Esto es parsear de db a un objeto para el context):", base, profile);
+        if (base.role === 'mentor' && profile) {
+            const mentorProfile = profile as Database["models"]["Tables"]["mentor_profiles"]["Row"];
+            let mentorUser: Mentor = {
+                id: base.id,
+                name: `${base.first_name || ''} ${base.last_name || ''}`.trim(),
+                first_name: base.first_name || undefined,
+                last_name: base.last_name || undefined,
+                email: base.email,
+                avatarUrl: base.avatar_url || '',
+                interests: profile.interests || [],
+                title: mentorProfile.title,
+                company: mentorProfile.company,
+                expertise: mentorProfile.expertise,
                 role: 'mentor',
-                rating: profile?.average_rating ?? 0,
-                reviews: profile?.total_reviews ?? 0,
-                longBio: profile?.bio ?? '',
-                mentorshipGoals: profile?.mentorship_goals ?? [],
-                maxMentees: profile?.max_mentees ?? 3,
-                links: profile?.paper_link ? [{ title: 'Publicación', url: profile.paper_link }] : [],
-            } as Mentor;
-        }
-
-        if (base.role === 'mentee') {
-            return {
-                ...commonData,
+                rating: mentorProfile.average_rating || 0,
+                reviews: mentorProfile.total_reviews || 0,
+                mentorshipGoals: mentorProfile.mentorship_goals,
+                maxMentees: mentorProfile.max_mentees,
+                links: mentorProfile.paper_link ? JSON.parse(mentorProfile.paper_link) : [],
+            }
+            return mentorUser;
+        } else if (base.role === 'mentee' && profile) {
+            const menteeProfile = profile as Database["models"]["Tables"]["mentee_profiles"]["Row"];
+            let menteeUser: Mentee = {
+                bio: menteeProfile.bio || '',
+                company: menteeProfile.company || '',
+                title: menteeProfile.title || '',
+                first_name: base.first_name || undefined,
+                last_name: base.last_name || undefined,
+                pronouns: menteeProfile.pronouns || undefined,
+                neurodivergence: menteeProfile.neurodivergence_details || undefined,
                 role: 'mentee',
-                bio: profile?.bio ?? '',
-                mentorshipGoals: profile?.mentorship_goals ?? [],
-                experience: profile?.role_level,
-                pronouns: profile?.pronouns,
-                neurodivergence: profile?.neurodivergence_details,
-            } as Mentee;
-        }
+                mentorshipGoals: menteeProfile.mentorship_goals || [],
+                id: base.id,
+                name: `${base.first_name || ''} ${base.last_name || ''}`.trim(),
+                email: base.email,
+                avatarUrl: base.avatar_url || '',
+                interests: profile.interests || []
+            }
 
-        return { ...commonData, role: 'admin' } as AdminUser;
+            return menteeUser;
+        }else if (base.role === 'admin') {
+            const adminUser: AdminUser = {
+                id: base.id,
+                name: base.first_name ? `${base.first_name} ${base.last_name || ''}`.trim() : 'Admin User',
+                email: base.email,
+                role: 'admin',
+                avatarUrl: base.avatar_url || '',
+                interests: [],
+                company: '',
+                title: ''
+            };
+            return adminUser;
+        }
+        console.error('[AuthContext] Rol de usuario no reconocido o perfil faltante:', base.role, profile);
+        throw new Error('User role not recognized or profile missing');
+
     }, []);
 
     // --- 2. Fetch Centralizado (Con Auto-Corrección) ---
     const fetchUserData = useCallback(async (userId: string) => {
         try {
-            //Primero voy a revisar si la sesión es válida
+            // Primero voy a revisar si la sesión es válida
+            // Básicamente es ver si en el auth de supabase hay sesión y coincide con el userId solicitado
             // 1. Obtener usuario base
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data:  {session}  } = await supabase.auth.getSession();
             if (!session || session.user.id !== userId) {
                 console.warn('[AuthContext] Sesión inválida o usuario no coincide. Limpiando estado de usuario.');
                 setUser(null);
@@ -237,6 +254,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     bio: dataFromRegisterForm.bio || null,
                     long_bio: dataFromRegisterForm.long_bio || null,
                     user_id: AuthUser.user.id,
+                    max_mentees: 3 // Valor por defecto
+                    
                 }]);
                 if (insertMentorError) throw insertMentorError;
             }

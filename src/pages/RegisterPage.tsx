@@ -5,9 +5,22 @@ import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons';
 import { useProfileOptions } from '../hooks/useProfileOptions';
+import { RegisterDTO } from '@/DTO/Register.dto';
 
 const RegisterPage: React.FC = () => {
     const { role } = useParams<{ role: 'mentee' | 'mentor' }>();
+    // Form state sets default values but will be updated as user fills the form
+    const [registerForm, setRegisterForm] = useState<RegisterDTO>({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        role: role === 'mentor' ? 'mentor' : 'mentee',
+        title: '',
+        company: '',
+        interests: [],
+        mentorship_goals: [],
+    });
 
     // Step state
     const [step, setStep] = useState(1);
