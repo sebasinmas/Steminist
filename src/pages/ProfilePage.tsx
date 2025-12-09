@@ -3,7 +3,6 @@ import type { Mentee, Mentor } from '../types';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
 import Tag from '../components/common/Tag';
-import Tooltip from '../components/common/Tooltip';
 import GoogleCalendarButton from '../components/common/GoogleCalendarButton';
 import { PencilIcon, CameraIcon, XIcon, LinkIcon } from '../components/common/Icons';
 import AvailabilityCalendarModal from '../components/scheduling/AvailabilityCalendarModal';
@@ -219,8 +218,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         title: mentor.title || null,
                         company: mentor.company || null,
                         bio: mentor.longBio || null,
-                        interests: mentor.interests || [],
-                        mentorship_goals: mentor.mentorshipGoals || [],
+                        interests: (mentor.interests || []).filter((interest): interest is typeof interestOptions[number] => interestOptions.includes(interest)),
+                        mentorship_goals: (mentor.mentorshipGoals || []).filter(
+                            (goal): goal is typeof goalOptions[number] => goalOptions.includes(goal)
+                        ),
                         expertise: (mentor as any).expertise || null,
                         paper_link: (mentor as any).paperLink || null,
                     })
@@ -251,8 +252,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         title: mentee.title || null,
                         company: mentee.company || null,
                         bio: mentee.bio || null,
-                        interests: mentee.interests || [],
-                        mentorship_goals: mentee.mentorshipGoals || [],
+                        interests: (mentee.interests || []).filter((interest): interest is typeof interestOptions[number] => interestOptions.includes(interest)),
+                        mentorship_goals: (mentee.mentorshipGoals || []).filter(
+                            (goal): goal is typeof goalOptions[number] => goalOptions.includes(goal)
+                        ),
                         role_level: (mentee as any).roleLevel || null,
                         pronouns: mentee.pronouns || null,
                         is_neurodivergent: !!mentee.neurodivergence,

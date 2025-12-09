@@ -1,18 +1,14 @@
-import React, {
-    createContext,
-    useState,
-    useContext,
-    ReactNode,
-    useMemo,
-    useEffect,
-} from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import type { UserRole, User, Mentor, Mentee, AdminUser } from '../types';
+import type { UserRole, User, Mentor, Mentee, AdminUser, BaseUser } from '../types';
+import { Database } from '@/types/Database';
+import { RegisterDTO } from '@/DTO/Register.dto';
 
 interface AuthContextType {
     user: User | null;
     role: UserRole | null;
     isLoggedIn: boolean;
+    isLoading: boolean;
     login: (email: string, password?: string) => Promise<void>;
     logout: () => void;
     register: (data: any, role: 'mentee' | 'mentor') => Promise<void>;
@@ -21,350 +17,274 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ---------------- HELPERS DE ACCESO A SUPABASE (SCHEMA MODELS) ---------------- //
-
-async function fetchUserBase(userId: string) {
-    const { data, error } = await supabase
-        .from('users')
-        .select(
-            'id, email, role, avatar_url, timezone, first_name, last_name, created_at, updated_at',
-        )
-        .eq('id', userId)
-        .maybeSingle(); // evita romper si aún no existe fila
-
-    if (error) throw error;
-    return data;
-}
-
-async function fetchMentorProfile(userId: string) {
-    const { data, error } = await supabase
-        .from('mentor_profiles')
-        .select(
-            'title, company, bio, interests, mentorship_goals, expertise, max_mentees, average_rating, total_reviews, paper_link',
-        )
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    if (error) throw error;
-    return data;
-}
-
-async function fetchMenteeProfile(userId: string) {
-    const { data, error } = await supabase
-        .from('mentee_profiles')
-        .select(
-            'title, company, bio, interests, mentorship_goals, role_level, pronouns, is_neurodivergent, neurodivergence_details',
-        )
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    if (error) throw error;
-    return data;
-}
-
-// ---------------- BUILDERS TIPADOS (SIN CASTS PELIGROSOS) ---------------- //
-
-function buildAdminUserFromRow(row: any): AdminUser {
-    const firstName: string = row?.first_name ?? '';
-    const lastName: string = row?.last_name ?? '';
-    const fullName =
-        `${firstName} ${lastName}`.trim() ||
-        row?.email?.split('@')[0] ||
-        'Usuario';
-
-    return {
-        id: row.id,
-        name: fullName,
-        email: row.email,
-        role: 'admin',
-        avatarUrl: row.avatar_url || 'https://via.placeholder.com/150',
-        interests: [],
-        company: '',
-        title: '',
-    };
-}
-
-function buildMentorUser(base: any, profile: any | null): Mentor {
-    const firstName: string = base?.first_name ?? '';
-    const lastName: string = base?.last_name ?? '';
-    const fullName =
-        `${firstName} ${lastName}`.trim() ||
-        base?.email?.split('@')[0] ||
-        'Mentora';
-
-    return {
-        id: base.id,
-        name: fullName,
-        first_name: firstName,
-        last_name: lastName,
-        email: base.email,
-        role: 'mentor',
-        avatarUrl: base.avatar_url || 'https://via.placeholder.com/150',
-
-        interests: profile?.interests ?? [],
-        availability: {},
-
-        company: profile?.company ?? '',
-        title: profile?.title ?? '',
-        experience: undefined,
-        timezone: base.timezone ?? undefined,
-        motivations: [],
-
-        rating: profile?.average_rating ?? 0,
-        reviews: profile?.total_reviews ?? 0,
-
-        longBio: profile?.bio ?? '',
-        mentorshipGoals: profile?.mentorship_goals ?? [],
-        maxMentees: profile?.max_mentees ?? 3,
-        links: profile?.paper_link
-            ? [{ title: 'Publicación', url: profile.paper_link }]
-            : [],
-    };
-}
-
-function buildMenteeUser(base: any, profile: any | null): Mentee {
-    const firstName: string = base?.first_name ?? '';
-    const lastName: string = base?.last_name ?? '';
-    const fullName =
-        `${firstName} ${lastName}`.trim() ||
-        base?.email?.split('@')[0] ||
-        'Mentoreada';
-
-    return {
-        id: base.id,
-        name: fullName,
-        first_name: firstName,
-        last_name: lastName,
-        email: base.email,
-        role: 'mentee',
-        avatarUrl: base.avatar_url || 'https://via.placeholder.com/150',
-
-        interests: profile?.interests ?? [],
-        availability: {},
-
-        company: profile?.company ?? '',
-        title: profile?.title ?? '',
-        experience: profile?.role_level ?? undefined,
-        timezone: base.timezone ?? undefined,
-        motivations: [],
-
-        bio: profile?.bio ?? '',
-        mentorshipGoals: profile?.mentorship_goals ?? [],
-        pronouns: profile?.pronouns ?? '',
-        neurodivergence: profile?.neurodivergence_details ?? '',
-    };
-}
-
-// Enriquecer usuario desde el schema relacional según su rol
-async function enrichUserFromSchema(userId: string): Promise<User | null> {
-    const baseUserRow = await fetchUserBase(userId);
-    if (!baseUserRow) {
-        // Si aún no existe en models.users, no podemos construir un User
-        return null;
-    }
-
-    const role = (baseUserRow.role || 'mentee') as UserRole;
-
-    if (role === 'mentor') {
-        const mentorProfile = await fetchMentorProfile(userId);
-        return buildMentorUser(baseUserRow, mentorProfile);
-    }
-
-    if (role === 'mentee') {
-        const menteeProfile = await fetchMenteeProfile(userId);
-        return buildMenteeUser(baseUserRow, menteeProfile);
-    }
-
-    // Para admin u otros roles, devolvemos el subtipo AdminUser
-    return buildAdminUserFromRow(baseUserRow);
-}
-
-// ---------------------- PROVIDER ---------------------- //
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({
-    children,
-}) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // helper público para refrescar el usuario desde fuera
-    const refreshUser = async () => {
-        console.log('[AuthContext] refreshUser start');
-        const {
-            data: { session },
-            error: sessionError,
-        } = await supabase.auth.getSession();
+    // --- 1. Formateador Unificado (Evita errores de tipos) ---
+    const formatUser = useCallback((base: Database["models"]["Tables"]["users"]["Row"], profile: Database["models"]["Tables"]["mentor_profiles"]["Row"] | Database["models"]["Tables"]["mentee_profiles"]["Row"]): User => {
+        const full_name = `${base.first_name || ''} ${base.last_name || ''}`.trim();
+        const commonData = {
+            id: base.id,
+            name: full_name,
+            email: base.email,
+            first_name: base.first_name,
+            last_name: base.last_name,
+            avatarUrl: base.avatar_url || undefined,
+            timezone: base.timezone,
+            interests: profile?.interests ?? [],
+            availability: {},
+            company: profile?.company ?? '',
+            title: profile?.title ?? '',
+            motivations: [],
+        };
 
-        console.log('[AuthContext] getSession result', { session, sessionError });
-
-        if (sessionError) {
-            console.error('[AuthContext] getSession error', sessionError);
-            throw sessionError;
+        if (base.role === 'mentor') {
+            return {
+                ...commonData,
+                role: 'mentor',
+                rating: profile?.average_rating ?? 0,
+                reviews: profile?.total_reviews ?? 0,
+                longBio: profile?.bio ?? '',
+                mentorshipGoals: profile?.mentorship_goals ?? [],
+                maxMentees: profile?.max_mentees ?? 3,
+                links: profile?.paper_link ? [{ title: 'Publicación', url: profile.paper_link }] : [],
+            } as Mentor;
         }
 
-        if (session?.user) {
-            console.log('[AuthContext] calling enrichUserFromSchema', session.user.id);
-            const fullUser = await enrichUserFromSchema(session.user.id);
-            console.log('[AuthContext] enrichUserFromSchema done', fullUser);
-            setUser(fullUser);
-        } else {
-            console.log('[AuthContext] no session.user, setting user null');
-            setUser(null);
+        if (base.role === 'mentee') {
+            return {
+                ...commonData,
+                role: 'mentee',
+                bio: profile?.bio ?? '',
+                mentorshipGoals: profile?.mentorship_goals ?? [],
+                experience: profile?.role_level,
+                pronouns: profile?.pronouns,
+                neurodivergence: profile?.neurodivergence_details,
+            } as Mentee;
         }
 
-        console.log('[AuthContext] refreshUser end');
-    };
+        return { ...commonData, role: 'admin' } as AdminUser;
+    }, []);
 
-    // Cargar usuario al inicio
-    useEffect(() => {
-        let active = true;
-
-        const init = async () => {
-            setLoading(true);
-            const {
-                data: { session },
-            } = await supabase.auth.getSession();
-
-            if (session?.user) {
-                const fullUser = await enrichUserFromSchema(session.user.id);
-                if (active) setUser(fullUser);
-            } else {
-                if (active) setUser(null);
+    // --- 2. Fetch Centralizado (Con Auto-Corrección) ---
+    const fetchUserData = useCallback(async (userId: string) => {
+        try {
+            //Primero voy a revisar si la sesión es válida
+            // 1. Obtener usuario base
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session || session.user.id !== userId) {
+                console.warn('[AuthContext] Sesión inválida o usuario no coincide. Limpiando estado de usuario.');
+                setUser(null);
+                return;
             }
 
-            setLoading(false);
+            // a) Buscar en tabla pública users
+            const { data: baseUser, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .maybeSingle();
+            if (error) {
+                console.error('[AuthContext] Error fetching base user:', error);
+                throw error;
+            }
+            // b) AUTOCORRECCIÓN: Si hay sesión pero no hay usuario en BD
+            if (!baseUser) {
+                console.warn('[AuthContext] Usuario huérfano detectado (Auth sí, DB no). Cerrando sesión...');
+                await supabase.auth.signOut();
+                setUser(null);
+                return;
+            }
+
+            // c) Buscar perfil específico
+            let profile = null;
+            const table = baseUser.role === 'mentor' ? 'mentor_profiles' :
+                baseUser.role === 'mentee' ? 'mentee_profiles' : null;
+            if (table) {
+                const { data } = await supabase.from(table).select('*').eq('user_id', userId).maybeSingle();
+                profile = data;
+            }
+            // d) Guardar usuario completo
+            setUser(formatUser(baseUser, profile));
+            console.log('[AuthContext] Usuario cargado:', baseUser.email);
+
+        } catch (err) {
+            console.error('[AuthContext] Fallo crítico cargando usuario:', err);
+            // En caso de error grave, dejamos al usuario como null para no bloquear la UI
+            setUser(null);
+        }
+    }, [formatUser]);
+
+    // --- 3. Inicialización Robusta (Arreglo del Spinner) ---
+    useEffect(() => {
+        let mounted = true;
+
+        const init = async () => {
+            try {
+                // Obtener sesión inicial
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) throw error;
+
+                if (session?.user && mounted) {
+                    await fetchUserData(session.user.id);
+                }
+            } catch (error) {
+                console.error('[AuthContext] Error en inicialización:', error);
+                if (mounted) setUser(null);
+            } finally {
+                // ESTO ES CLAVE: El finally asegura que el spinner se quite SIEMPRE
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
         };
 
         init();
 
-        // Suscribirse a cambios de sesión
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-                const fullUser = await enrichUserFromSchema(session.user.id);
-                setUser(fullUser);
-            } else {
+        // Escuchar cambios de sesión
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log(`[Auth] Evento: ${event}`);
+
+            if (event === 'SIGNED_OUT') {
                 setUser(null);
+                setLoading(false);
+            } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+                // Solo recargamos si el usuario cambió para evitar parpadeos
+                if (!user || user.id !== session.user.id) {
+                    await fetchUserData(session.user.id);
+                }
             }
         });
 
         return () => {
-            active = false;
+            mounted = false;
             subscription.unsubscribe();
         };
-    }, []);
+    }, [fetchUserData]); // user removido de dep para evitar bucles
+
+    // --- 4. Acciones (Login, Logout, Register) ---
 
     const login = async (email: string, password?: string) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password: password!,
-        });
-
-        if (error) throw error;
-
-        const fullUser = await enrichUserFromSchema(data.user.id);
-        setUser(fullUser);
+        setLoading(true);
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: password! });
+            if (error) throw error;
+            if (data.user) await fetchUserData(data.user.id);
+        } catch (error) {
+            console.error("Login error:", error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
-        setUser(null);
+        setLoading(true);
+        try {
+            await supabase.auth.signOut();
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const register = async (data: any, role: 'mentee' | 'mentor') => {
-        // 1) Crear en Auth
-        const { data: authData, error } = await supabase.auth.signUp({
-            email: data.email,
-            password: data.password,
-        });
-        if (error) throw error;
-
-        const userId =
-            authData?.user?.id || (await supabase.auth.getUser()).data.user?.id;
-
-        if (!userId) {
-            throw new Error('No se pudo obtener el ID del usuario después del registro');
+    const register = async (dataFromRegisterForm: RegisterDTO) => {
+        setLoading(true);
+        console.info("Registrando el usuario con la siguiente data: ", dataFromRegisterForm);
+        if (!dataFromRegisterForm.role) throw new Error('El rol es obligatorio para el registro');
+        try {
+            //Primero voy a revisar si el usuario ya existe y voy a renombrar en el destructuring
+            console.info("Creando el usuario en Supabase Auth...");
+            const { data: AuthUser, error: signUpError } = await supabase.auth.signUp({
+                email: dataFromRegisterForm.email,
+                password: dataFromRegisterForm.password,
+            });
+            //Si el usuario ya existe, lanzo el error
+            if (signUpError) throw signUpError;
+            if (!AuthUser.user) throw new Error('User not created');
+            //Una vez creado en el auth vamos a insertar el resto de datos en: La tabla general models.Users y luego
+            //la tabla específica dependiendo del rol
+            console.info("Insertando datos adicionales en la base de datos de USERS...");
+            const { data: insertedUser, error: insertUserError } = await supabase.from('users').insert([{
+                id: AuthUser.user.id,
+                email: dataFromRegisterForm.email,
+                first_name: dataFromRegisterForm.first_name,
+                last_name: dataFromRegisterForm.last_name,
+                role: dataFromRegisterForm.role,
+                avatar_url: dataFromRegisterForm.avatar_url || null
+            }]);
+            if (insertUserError || !insertedUser) throw insertUserError;
+            // Ahora insertamos en la tabla específica
+            console.info(`Insertando perfil específico para el rol ${dataFromRegisterForm.role}...`);
+            if (dataFromRegisterForm.role === 'mentee') {
+                const { error: insertMenteeError } = await supabase.from('mentee_profiles').insert([{
+                    user_id: AuthUser.user.id,
+                    title: dataFromRegisterForm.title || null,
+                    company: dataFromRegisterForm.company || null,
+                    bio: dataFromRegisterForm.bio || null,
+                    role_level: dataFromRegisterForm.role_level || null,
+                    pronouns: dataFromRegisterForm.pronouns || null,
+                    is_neurodivergent: dataFromRegisterForm.is_neurodivergent || null,
+                    neurodivergence_details: dataFromRegisterForm.neurodivergence_details || null,
+                }]);
+                if (insertMenteeError) throw insertMenteeError;
+            } else if (dataFromRegisterForm.role === 'mentor') {
+                const { error: insertMentorError } = await supabase.from('mentor_profiles').insert([{
+                    title: dataFromRegisterForm.title || null,
+                    company: dataFromRegisterForm.company || null,
+                    bio: dataFromRegisterForm.bio || null,
+                    long_bio: dataFromRegisterForm.long_bio || null,
+                    user_id: AuthUser.user.id,
+                }]);
+                if (insertMentorError) throw insertMentorError;
+            }
+            // Finalmente, cargamos el usuario en el contexto
+            console.log("Cargando el usuario recién registrado en el contexto...");
+            await fetchUserData(AuthUser.user.id);
+            console.info("Registro completado y usuario cargado en el contexto.");
+        } catch (error) {
+            console.error("Registration error:", error);
+            throw error;
+        } finally {
+            // La carga se desactiva al final
+            setLoading(false);
         }
 
-        // 2) Crear fila en models.users (vía view public.users)
-        const { error: baseErr } = await supabase.from('users').insert({
-            id: userId,
-            email: data.email,
-            role,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            avatar_url: null,
-            timezone: data.timezone || null,
-        });
-
-        if (baseErr) throw baseErr;
-
-        // 3) Crear perfil extendido según rol
-        if (role === 'mentor') {
-            const { error: mentorErr } = await supabase.from('mentor_profiles').insert({
-                user_id: userId,
-                title: data.title || '',
-                company: data.company || '',
-                bio: data.bio || '',
-                interests: data.interests || [],
-                mentorship_goals: data.mentorshipGoals || [],
-                expertise: data.experience || null,
-                max_mentees: data.maxMentees || 3,
-                paper_link: data.paper_link || null,
-            });
-
-            if (mentorErr) throw mentorErr;
-        } else {
-            const { error: menteeErr } = await supabase.from('mentee_profiles').insert({
-                user_id: userId,
-                title: data.title || '',
-                company: data.company || '',
-                bio: data.bio || '',
-                interests: data.interests || [],
-                mentorship_goals: data.mentorshipGoals || [],
-                role_level: data.experience || null,
-                pronouns: data.pronouns || '',
-                is_neurodivergent: !!data.neurodivergence,
-                neurodivergence_details: data.neurodivergence || '',
-            });
-
-            if (menteeErr) throw menteeErr;
-        }
-
-        // 4) Cargar usuario enriquecido al contexto
-        const fullUser = await enrichUserFromSchema(userId);
-        setUser(fullUser);
     };
 
-    const value = useMemo(() => {
-        let role: UserRole | null = null;
-        if (user) {
-            role = user.role;
-        }
+    const refreshUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) await fetchUserData(session.user.id);
+    };
 
-        return {
-            user,
-            role,
-            isLoggedIn: !!user,
-            login,
-            logout,
-            register,
-            refreshUser,
-        };
-    }, [user]);
+    const value = useMemo(() => ({
+        user,
+        role: user?.role || null,
+        isLoggedIn: !!user,
+        isLoading: loading,
+        login,
+        logout,
+        register,
+        refreshUser
+    }), [user, loading, login, logout, register, refreshUser]);
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {loading ? (
+                <div className="flex h-screen w-full items-center justify-center bg-background">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+            ) : (
+                children
+            )}
         </AuthContext.Provider>
     );
 };
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
+    if (!context) throw new Error('useAuth debe usarse dentro de AuthProvider');
     return context;
 };

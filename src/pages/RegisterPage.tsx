@@ -13,7 +13,7 @@ const RegisterPage: React.FC = () => {
     const [step, setStep] = useState(1);
 
     // Form state
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [firstName, setFirstName] = useState('');
@@ -73,6 +73,7 @@ const RegisterPage: React.FC = () => {
                 last_name: lastName,
                 name: `${firstName} ${lastName}`,
                 email,
+                role,
                 password,
                 neurodivergence,
                 title: jobTitle,
