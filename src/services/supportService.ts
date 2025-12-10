@@ -53,3 +53,73 @@ export const createSupportTicket = async (
     }
 };
 
+export const updateSupportTicketStatus = async (
+    ticketId: number,
+    status: 'resolved'
+): Promise<void> => {
+    try {
+        const { error } = await supabase
+            .from('support_tickets')
+            .update({ status: status })
+            .eq('id', ticketId);
+
+        if (error) {
+            console.error('Error updating support ticket status:', error);
+            throw error;
+        }
+    } catch (err) {
+        console.error('Unexpected error updating support ticket status:', err);
+        throw err;
+    }
+};
+
+export const fetchSupportTickets = async (): Promise<any[]> => {
+    try {
+        const { data, error } = await supabase
+            .from('support_tickets')
+            .select(`
+                *,
+                users:user_id (
+                    id,
+                    first_name,
+                    last_name,
+                    avatar_url,
+                    role
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching support tickets:', error);
+            return [];
+        }
+
+        if (!data) return [];
+
+        return data.map(ticket => {
+            const user = ticket.users;
+            const firstName = user?.first_name || '';
+            const lastName = user?.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim() || 'Usuario Desconocido';
+
+            return {
+                id: ticket.id,
+                user: {
+                    id: user?.id,
+                    name: fullName,
+                    email: '', // Not strictly needed for card, but part of type
+                    role: user?.role || 'mentee',
+                    avatarUrl: user?.avatar_url || '',
+                },
+                subject: ticket.subject,
+                message: ticket.message,
+                status: ticket.status,
+                timestamp: ticket.created_at
+            };
+        });
+    } catch (err) {
+        console.error('Unexpected error fetching support tickets:', err);
+        return [];
+    }
+};
+
