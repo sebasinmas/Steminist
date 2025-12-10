@@ -5,11 +5,12 @@ import Card from '../common/Card';
 import { useToast } from '../../context/ToastContext';
 
 interface ConnectionRequestCardProps {
+    avatarUrl: string;
     request: ConnectionRequest;
     onStatusChange: (requestId: number, newStatus: 'accepted' | 'declined') => void;
 }
 
-const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, onStatusChange }) => {
+const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({avatarUrl, request, onStatusChange }) => {
     const { mentee, motivationLetter } = request;
     const { addToast } = useToast();
 
@@ -27,7 +28,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, 
         <Card>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <div className="flex items-center space-x-4">
-                    <img src={mentee.avatarUrl} alt={mentee.name} className="w-16 h-16 rounded-full flex-shrink-0" />
+                    <img src={avatarUrl} alt={mentee.name} className="w-16 h-16 rounded-full flex-shrink-0" />
                     <div>
                         <h3 className="text-lg font-bold">Nueva Solicitud de Conexión</h3>
                         <p className="text-sm text-muted-foreground">

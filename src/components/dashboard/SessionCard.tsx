@@ -5,6 +5,7 @@ import Button from '../common/Button';
 import Card from '../common/Card';
 
 interface SessionCardProps {
+    avatarUrl: string;
     session: Session;
     userRole: UserRole;
     onStatusChange: (sessionId: number, newStatus: Session['status']) => void;
