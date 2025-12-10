@@ -22,7 +22,8 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import { fetchMentors } from './services/mentorService';
+import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './services/mentorService';
+import { fetchMentorships } from './services/mentorshipService';
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 
 const App: React.FC = () => {
@@ -82,8 +83,20 @@ const AppContent: React.FC = () => {
             }
         };
 
+        const loadMentorships = async () => {
+            if (isLoggedIn) {
+                try {
+                    const data = await fetchMentorships();
+                    setMentorships(data);
+                } catch (error) {
+                    console.error("Failed to fetch mentorships:", error);
+                }
+            }
+        };
+
         loadMentors();
         loadSupportTickets();
+        loadMentorships();
     }, [isLoggedIn, role]);
 
     useEffect(() => {
@@ -171,8 +184,23 @@ const AppContent: React.FC = () => {
         }));
     };
 
-    const updateMentorMaxMentees = (mentorId: number, maxMentees: number) => {
+    const updateMentorMaxMentees = async (mentorId: string | number, maxMentees: number) => {
+        // Optimistic update
         setMentors(prev => prev.map(m => m.id === mentorId ? { ...m, maxMentees } : m));
+
+        // Call service for persistence
+        if (isLoggedIn) {
+            const idString = String(mentorId);
+            try {
+                const success = await updateMentorService(idString, maxMentees);
+                if (!success) {
+                    console.error('Failed to update max mentees in DB');
+                    // Optionally revert state here if needed
+                }
+            } catch (error) {
+                console.error('Error calling update service:', error);
+            }
+        }
     };
 
     const requestMentorshipTermination = (mentorshipId: number, reasons: string[], details: string) => {

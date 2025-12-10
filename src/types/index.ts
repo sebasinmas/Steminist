@@ -46,6 +46,7 @@ export interface Mentor extends BaseUser {
   longBio: string;
   mentorshipGoals: string[]; // Renamed from mentoringTopics
   maxMentees: number;
+  activeMenteesCount?: number;
   links?: Link[];
 }
 
@@ -74,7 +75,8 @@ export type SessionStatus =
   | 'cancelled'
   | 'needs_confirmation'
   | 'rescheduled'
-  | 'termination_requested';
+  | 'termination_requested'
+  | 'active';
 
 export interface Session {
   id: number;
