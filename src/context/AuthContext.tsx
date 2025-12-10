@@ -209,10 +209,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         return baseUser as User;
     };
 
-    const fetchUserProfile = async (sessionUser: any) => {
+    const fetchUserProfile = async (sessionUser: any): Promise<User | null> => {
         const userId = sessionUser.id;
 
-        // Prevent duplicate concurrent fetches for the same user
+        // Evitar llamadas duplicadas en paralelo
         if (fetchingProfileRef.current.has(userId)) {
             console.log('⏭️ [AuthContext] Ya hay una consulta en curso para este usuario, omitiendo...');
             return null;
@@ -223,86 +223,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         console.log('🔍 [AuthContext] Iniciando fetchUserProfile para usuario:', userId);
 
         try {
-            // Fetch full profile from models.users
-            console.log('📡 [AuthContext] Consultando base de datos...');
-            const { data: profile, error } = await supabase
-                .from('users')
-                .select('id, email, first_name, last_name, role, avatar_url, mentee_profiles(interests, mentorship_goals), mentor_profiles(interests, mentorship_goals, bio, title, company), availability_blocks(day_of_week, start_time, end_time)')
-                .eq('id', sessionUser.id)
-                .single();
+            // 1) Leer fila base de public.users
+            const baseUserRow = await fetchUserBase(userId);
+            if (!baseUserRow) {
+                const elapsedTime = performance.now() - startTime;
+                console.log(
+                    `⚠️ [AuthContext] Usuario no encontrado en public.users (${elapsedTime.toFixed(
+                        2,
+                    )}ms)`,
+                );
+                fetchingProfileRef.current.delete(userId);
+                return null;
+            }
 
-            const elapsedTime = performance.now() - startTime;
+            // 2) Según rol, leer perfil extendido y construir User tipado
+            const role = (baseUserRow.role || 'mentee') as UserRole;
+            let fullUser: User;
 
-            if (error) {
-                // If row not found (PGRST116), it might be a new user or not yet created in the table.
-                // We fallback to session metadata.
-                if (error.code === 'PGRST116') {
-                    console.log(`⚠️ [AuthContext] Usuario no encontrado en DB (${elapsedTime.toFixed(2)}ms) - Usando metadata de sesión`);
-                } else {
-                    console.error(`❌ [AuthContext] Error fetching user profile (${elapsedTime.toFixed(2)}ms):`, error);
-                }
+            if (role === 'mentor') {
+                const mentorProfile = await fetchMentorProfile(userId);
+                fullUser = buildMentorUser(baseUserRow, mentorProfile);
+            } else if (role === 'mentee') {
+                const menteeProfile = await fetchMenteeProfile(userId);
+                fullUser = buildMenteeUser(baseUserRow, menteeProfile);
             } else {
-                console.log(`✅ [AuthContext] Perfil obtenido exitosamente (${elapsedTime.toFixed(2)}ms)`, {
-                    hasProfile: !!profile,
-                    hasMenteeProfile: !!profile?.mentee_profiles,
-                    hasMentorProfile: !!profile?.mentor_profiles,
-                    hasAvailability: !!profile?.availability_blocks
-                });
+                fullUser = buildAdminUserFromRow(baseUserRow);
             }
-
-            const metadata = sessionUser.user_metadata || {};
-
-            // Helper to extract profile data
-            const menteeProfile = profile?.mentee_profiles ? (Array.isArray(profile.mentee_profiles) ? profile.mentee_profiles[0] : profile.mentee_profiles) : null;
-            const mentorProfile = profile?.mentor_profiles ? (Array.isArray(profile.mentor_profiles) ? profile.mentor_profiles[0] : profile.mentor_profiles) : null;
-
-            // Prioritize specific profile tables for interests/goals
-            const interests = menteeProfile?.interests || mentorProfile?.interests || metadata.interests || [];
-            const mentorshipGoals = menteeProfile?.mentorship_goals || mentorProfile?.mentorship_goals || metadata.mentorshipGoals || [];
-            const bio = mentorProfile?.bio || metadata.bio || '';
-            const title = mentorProfile?.title || metadata.title || '';
-            const company = mentorProfile?.company || metadata.company || '';
-
-            // Map availability_blocks to Availability object
-            const availability: { [key: string]: string[] } = {};
-            if (profile?.availability_blocks && Array.isArray(profile.availability_blocks)) {
-                profile.availability_blocks.forEach((block: any) => {
-                    const day = block.day_of_week.toLowerCase();
-                    const timeRange = `${block.start_time.slice(0, 5)}-${block.end_time.slice(0, 5)}`;
-                    if (!availability[day]) {
-                        availability[day] = [];
-                    }
-                    availability[day].push(timeRange);
-                });
-            }
-
-            // Merge session metadata with DB profile
-            // DB profile takes precedence for fields that exist there
-            const mergedUser = {
-                id: sessionUser.id,
-                email: sessionUser.email || '',
-                name: profile?.first_name ? `${profile.first_name} ${profile.last_name}` : (metadata.name || sessionUser.email?.split('@')[0] || 'User'),
-                role: (profile?.role || metadata.role || 'mentee') as UserRole,
-                avatarUrl: profile?.avatar_url || metadata.avatarUrl || 'https://via.placeholder.com/150',
-                interests: interests,
-                availability: availability,
-                mentorshipGoals: mentorshipGoals,
-                bio: bio,
-                title: title,
-                company: company,
-                // Add other fields from profile if needed
-                ...profile,
-                ...metadata // metadata might have some extra fields not in DB yet
-            } as User;
 
             const totalTime = performance.now() - startTime;
-            console.log(`✨ [AuthContext] Usuario mergeado completado (${totalTime.toFixed(2)}ms total)`);
+            console.log(
+                `✨ [AuthContext] Usuario completo construido (${totalTime.toFixed(
+                    2,
+                )}ms total)`,
+                fullUser,
+            );
             fetchingProfileRef.current.delete(userId);
-            return mergedUser;
-
+            return fullUser;
         } catch (err) {
             const errorTime = performance.now() - startTime;
-            console.error(`💥 [AuthContext] Error inesperado en fetchUserProfile (${errorTime.toFixed(2)}ms):`, err);
+            console.error(
+                `💥 [AuthContext] Error inesperado en fetchUserProfile (${errorTime.toFixed(
+                    2,
+                )}ms):`,
+                err,
+            );
             fetchingProfileRef.current.delete(userId);
             return null;
         }

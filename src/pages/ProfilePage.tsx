@@ -170,10 +170,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
         try {
             const userId = user.id;
-// CAMBIO: Leer directamente nombre y apellido separados
+            // Leer directamente nombre y apellido separados desde profileData o desde user
             const avatarUrl = (profileData as any).avatarUrl;
-            const firstName = (profileData as any).first_name || '';
-            const lastName = (profileData as any).last_name || '';
+            const firstName =
+                (profileData as any).first_name ?? (user as any).first_name ?? '';
+            const lastName =
+                (profileData as any).last_name ?? (user as any).last_name ?? '';
 
             // 1) Actualizar users
             console.log('[ProfilePage] Updating users row', {
@@ -186,8 +188,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
             const { data: usersData, error: userErr } = await supabase
                 .from('users')
                 .update({
-                    first_name: firstName || user.firstName || null,
-                    last_name: lastName || user.lastName || null,
+                    first_name: firstName || null,
+                    last_name: lastName || null,
                     avatar_url: avatarUrl || null,
                 })
                 .eq('id', userId)
@@ -213,17 +215,24 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                     company: mentor.company,
                 });
 
+                // Construir objeto de updates sin pisar expertise si no viene definido
+                const mentorUpdates: any = {
+                    title: mentor.title || null,
+                    company: mentor.company || null,
+                    bio: mentor.longBio || null,
+                    interests: mentor.interests || [],
+                    mentorship_goals: mentor.mentorshipGoals || [],
+                    paper_link: (mentor as any).paperLink || null,
+                };
+
+                // Solo actualizar expertise si existe explícitamente en profileData
+                if (typeof (mentor as any).expertise !== 'undefined') {
+                    mentorUpdates.expertise = (mentor as any).expertise || null;
+                }
+
                 const { data: mentorData, error: mentorErr } = await supabase
                     .from('mentor_profiles')
-                    .update({
-                        title: mentor.title || null,
-                        company: mentor.company || null,
-                        bio: mentor.longBio || null,
-                        interests: mentor.interests || [],
-                        mentorship_goals: mentor.mentorshipGoals || [],
-                        expertise: (mentor as any).expertise || null,
-                        paper_link: (mentor as any).paperLink || null,
-                    })
+                    .update(mentorUpdates)
                     .eq('user_id', userId)
                     .select();
 
@@ -346,8 +355,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                     key={option}
                                     onClick={() => handleToggleOption(option)}
                                     className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${(tags || []).includes(option)
-                                        ? 'bg-primary text-primary-foreground border-primary'
-                                        : 'bg-background border-border hover:bg-accent'
+                                            ? 'bg-primary text-primary-foreground border-primary'
+                                            : 'bg-background border-border hover:bg-accent'
                                         } cursor-pointer`}
                                 >
                                     {option}
@@ -468,7 +477,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 </>
                             )}
                         </div>
-                            {isEditing ? (
+                        {isEditing ? (
                             <div className="space-y-2 mb-2">
                                 <input
                                     type="text"
@@ -497,10 +506,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 value={profileData.title || ''}
                                 onChange={handleInputChange}
                                 className="w-full text-center text-lg text-primary bg-input border border-border rounded-md p-2 mt-2"
-                                placeholder= "Cargo / Título profesional"
+                                placeholder="Cargo / Título profesional"
                             />
                         ) : (
-                            <p className="text-lg text-primary">{profileData.title || 'Sin Cargo / Título profesional'}</p>
+                            <p className="text-lg text-primary">
+                                {profileData.title || 'Sin Cargo / Título profesional'}
+                            </p>
                         )}
                         {isEditing ? (
                             <input
@@ -640,7 +651,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                     </p>
                                     <p>
                                         <strong>Neurodivergencia:</strong>{' '}
-                                        {(profileData as Mentee).neurodivergence || 'No especificado'}
+                                        {(profileData as Mentee).neurodivergence ||
+                                            'No especificado'}
                                     </p>
                                 </div>
                             )}
