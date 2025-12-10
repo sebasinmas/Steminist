@@ -102,7 +102,7 @@ export const connectionService = {
     },
 
     // Actualizar estado (Aceptar/Rechazar)
-    updateRequestStatus: async (requestId: number, status: 'accepted' | 'declined') => {
+    updateRequestStatus: async (requestId: number, status: 'accepted' | 'rejected') => {
         const { data, error } = await supabase
             .from('connection_requests')
             .update({ 

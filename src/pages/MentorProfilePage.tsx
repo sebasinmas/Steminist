@@ -34,7 +34,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
                 return <Button size="lg" className="w-full" disabled>Solicitud Enviada</Button>;
             case 'connected':
                 return <Button onClick={() => navigate('/dashboard')} size="lg" className="w-full">Ir al Panel para Agendar</Button>;
-            case 'declined':
+            case 'rejected':
                 return <Button size="lg" className="w-full" disabled>Conexión Rechazada</Button>;
             default:
                 return null;

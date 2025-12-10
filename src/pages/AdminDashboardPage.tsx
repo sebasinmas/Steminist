@@ -20,7 +20,7 @@ interface AdminDashboardPageProps {
     mentorships: Mentorship[];
     requests: ConnectionRequest[];
     mentors: Mentor[];
-    updateConnectionStatus: (requestId: number, newStatus: 'accepted' | 'declined') => void;
+    updateConnectionStatus: (requestId: number, newStatus: 'accepted' | 'rejected') => void;
     updateMentorMaxMentees: (mentorId: number, maxMentees: number) => void;
     supportTickets: SupportTicket[];
     updateSupportTicketStatus: (ticketId: number, status: 'resolved') => void;

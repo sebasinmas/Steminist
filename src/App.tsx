@@ -1,4 +1,5 @@
 
+import { supabase } from './lib/supabase';
 import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import type { Page, UserRole, Theme, ConnectionStatus } from './types';
@@ -156,27 +157,26 @@ const AppContent: React.FC = () => {
         }
     };
 
-const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'declined') => {
+const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'rejected') => {
         try {
-            // Actualizar en BD: connection_requests
-            await connectionService.updateRequestStatus(requestId, newStatus);
+            // Llamada a la RPC (Función de Base de Datos)
+            const { data, error } = await supabase.rpc('handle_connection_request', {
+                request_id: requestId,
+                new_status: newStatus
+            });
 
-            // Actualizar estado local UI (Solicitudes)
+            if (error) throw error;
+
+            // Actualizar UI: Remover de solicitudes pendientes
             setConnectionRequests(prev => prev.filter(r => r.id !== requestId));
 
             if (newStatus === 'accepted') {
-                // Si se acepta, crear la mentoría en BD
                 const request = connectionRequests.find(r => r.id === requestId);
-                if (request) {
-                    const newMentorshipData = await mentorService.createMentorship(
-                        request.mentor.id, 
-                        request.mentee.id, 
-                        requestId
-                    );
-                    
-                    // Construir objeto Mentorship para la UI (simplificado para actualización optimista)
+                
+                if (request && data.mentorship_id) {
+                    // Construir objeto Mentorship para la UI
                     const newMentorship: Mentorship = {
-                        id: newMentorshipData.id, // ID real de DB
+                        id: data.mentorship_id,
                         mentor: request.mentor,
                         mentee: request.mentee,
                         status: 'active',
@@ -184,16 +184,15 @@ const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' |
                         startDate: new Date().toISOString()
                     };
                     
-                    // Actualizar estado local UI (Mentorías)
                     setMentorships(prev => [...prev, newMentorship]);
                     addToast(`Solicitud aceptada y mentoría creada.`, 'success');
                 }
             } else {
                 addToast(`Solicitud rechazada.`, 'info');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating connection status:", error);
-            addToast("Error al procesar la solicitud", 'error');
+            addToast(`Error al procesar la solicitud: ${error.message}`, 'error');
         }
     };
 
