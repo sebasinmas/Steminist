@@ -5,25 +5,34 @@ import { XIcon } from '../common/Icons';
 interface ContactSupportModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (subject: string, message: string) => void;
+    onSubmit: (subject: string, message: string) => Promise<void>;
 }
 
 const ContactSupportModal: React.FC<ContactSupportModalProps> = ({ isOpen, onClose, onSubmit }) => {
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     if (!isOpen) return null;
 
-    const handleSubmit = () => {
-        if (subject && message) {
-            onSubmit(subject, message);
-            handleClose();
+    const handleSubmit = async () => {
+        if (subject && message && !isSubmitting) {
+            setIsSubmitting(true);
+            try {
+                await onSubmit(subject, message);
+                handleClose();
+            } catch (error) {
+                // Error is handled by the parent component
+                setIsSubmitting(false);
+            }
         }
     };
     
     const handleClose = () => {
+        if (isSubmitting) return; // Prevent closing while submitting
         setSubject('');
         setMessage('');
+        setIsSubmitting(false);
         onClose();
     };
 
@@ -62,8 +71,10 @@ const ContactSupportModal: React.FC<ContactSupportModalProps> = ({ isOpen, onClo
                 </div>
 
                 <div className="flex justify-end space-x-4 mt-6">
-                    <Button variant="ghost" onClick={handleClose}>Cancelar</Button>
-                    <Button variant="primary" onClick={handleSubmit} disabled={!subject || !message}>Enviar Consulta</Button>
+                    <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>Cancelar</Button>
+                    <Button variant="primary" onClick={handleSubmit} disabled={!subject || !message || isSubmitting}>
+                        {isSubmitting ? 'Enviando...' : 'Enviar Consulta'}
+                    </Button>
                 </div>
             </div>
         </div>
