@@ -16,7 +16,7 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                 ),
                 mentee:users!mentee_id(
                     id, first_name, last_name, email, role, avatar_url,
-                    mentee_profiles(title, company, bio, pronouns, neurodivergence_details)
+                    mentee_profiles(title, company, bio, pronouns, neurodivergence_details, is_neurodivergent)
                 ),
                 sessions(
                     id,
@@ -79,6 +79,7 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                 mentorshipGoals: [], // Not fetched
                 pronouns: menteeProfile.pronouns || '',
                 neurodivergence: menteeProfile.neurodivergence_details || '',
+                isNeurodivergent: menteeProfile.is_neurodivergent || false,
             };
 
             // Map Sessions
@@ -150,7 +151,8 @@ export const fetchMentees = async (): Promise<Mentee[]> => {
                     company, 
                     bio, 
                     pronouns, 
-                    neurodivergence_details, 
+                    neurodivergence_details,
+                    is_neurodivergent, 
                     mentorship_goals
                 ),
                 availability_blocks (
@@ -199,7 +201,8 @@ export const fetchMentees = async (): Promise<Mentee[]> => {
                 company: profile.company || '',
                 mentorshipGoals: profile.mentorship_goals || [],
                 pronouns: profile.pronouns,
-                neurodivergence: profile.neurodivergence_details
+                neurodivergence: profile.neurodivergence_details,
+                isNeurodivergent: profile.is_neurodivergent || false
             };
         });
     } catch (err) {

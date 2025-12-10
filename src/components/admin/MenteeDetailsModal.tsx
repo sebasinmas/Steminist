@@ -51,6 +51,19 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                     <h2 className="text-3xl font-bold">{mentee.name}</h2>
                     <p className="text-lg text-primary">{mentee.title || 'Estudiante'}</p>
                     <p className="text-md text-muted-foreground">{mentee.company || 'Universidad de Washington'}</p>
+
+                    <div className="flex flex-wrap justify-center gap-2 mt-3">
+                        {mentee.pronouns && (
+                            <span className="px-3 py-1 bg-secondary rounded-full text-sm text-foreground">
+                                {mentee.pronouns}
+                            </span>
+                        )}
+                        {mentee.isNeurodivergent && (
+                            <span className="px-3 py-1 bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium border border-purple-500/30">
+                                Neurodivergencia: {mentee.neurodivergence || 'Especificado'}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6">
@@ -74,8 +87,8 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                                         </div>
                                     </div>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${m.status === 'active' ? 'bg-green-500/80 text-white' :
-                                            m.status === 'terminated' ? 'bg-red-500/80 text-white' :
-                                                'bg-gray-500 text-white'
+                                        m.status === 'terminated' ? 'bg-red-500/80 text-white' :
+                                            'bg-gray-500 text-white'
                                         }`}>
                                         {m.status === 'active' ? 'Activa' : m.status === 'terminated' ? 'Terminada' : 'Completada'}
                                     </span>

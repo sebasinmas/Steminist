@@ -55,6 +55,7 @@ export interface Mentee extends BaseUser {
   mentorshipGoals: string[];
   pronouns?: string;
   neurodivergence?: string;
+  isNeurodivergent?: boolean;
 }
 
 export interface Attachment {
