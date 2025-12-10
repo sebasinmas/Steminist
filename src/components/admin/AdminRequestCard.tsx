@@ -17,12 +17,10 @@ const AdminRequestCard: React.FC<AdminRequestCardProps> = ({ request, onStatusCh
 
     const handleApprove = () => {
         onStatusChange(request.id, 'accepted');
-        addToast(`Solicitud de ${mentee.name} aprobada.`, 'success');
     };
 
     const handleDecline = () => {
         onStatusChange(request.id, 'rejected');
-        addToast(`Solicitud de ${mentee.name} rechazada.`, 'info');
     };
 
     return (
