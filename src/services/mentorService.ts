@@ -82,7 +82,7 @@ export const updateMentorMaxMentees = async (mentorId: string, maxMentees: numbe
         const { error } = await supabase
             .from('mentor_profiles')
             .update({ max_mentees: maxMentees })
-            .eq('id', mentorId);
+            .eq('user_id', mentorId);
 
         if (error) {
             console.error('Error updating max mentees:', error);
