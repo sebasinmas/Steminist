@@ -146,7 +146,7 @@ function buildMenteeUser(base: any, profile: any | null): Mentee {
 
         company: profile?.company ?? '',
         title: profile?.title ?? '',
-        experience: profile?.role_level ?? undefined,
+        // experience: profile?.role_level ?? undefined,
         timezone: base.timezone ?? undefined,
         motivations: [],
 
@@ -227,7 +227,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             // Fetch full profile from models.users
             console.log('📡 [AuthContext] Consultando base de datos...');
             const { data: profile, error } = await supabase
-                .schema('models')
                 .from('users')
                 .select('id, email, first_name, last_name, role, avatar_url, mentee_profiles(interests, mentorship_goals), mentor_profiles(interests, mentorship_goals, bio, title, company), availability_blocks(day_of_week, start_time, end_time)')
                 .eq('id', sessionUser.id)
@@ -507,7 +506,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                 bio: data.bio || '',
                 interests: data.interests || [],
                 mentorship_goals: data.mentorshipGoals || [],
-                role_level: data.experience || null,
+                // role_level: data.experience || null,
                 pronouns: data.pronouns || '',
                 is_neurodivergent: !!data.neurodivergence,
                 neurodivergence_details: data.neurodivergence || '',

@@ -4,7 +4,6 @@ import type { Mentor } from '../types';
 export const fetchMentors = async (): Promise<Mentor[]> => {
     try {
         const { data, error } = await supabase
-            .schema('models')
             .from('users')
             .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews), availability_blocks(day_of_week, start_time, end_time)')
             .eq('role', 'mentor');
