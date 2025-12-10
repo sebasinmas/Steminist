@@ -23,7 +23,7 @@ import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './services/mentorService';
-import { fetchMentorships } from './services/mentorshipService';
+import { fetchMentorships, fetchMentees } from './services/mentorshipService';
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 import { mentorService } from './services/mentorService';
 
@@ -48,8 +48,8 @@ const App: React.FC = () => {
 const AppContent: React.FC = () => {
     const { isLoggedIn, role, user } = useAuth();
     const { addToast } = useToast();
-    
-    
+
+
     // Hook para capturar automáticamente el token de Google
     useGoogleTokenCapture();
 
@@ -58,6 +58,7 @@ const AppContent: React.FC = () => {
     const [theme, setTheme] = useState<Theme>('dark');
     const [pendingSessions, setPendingSessions] = useState<Session[]>(mockPendingSessions);
     const [mentors, setMentors] = useState<Mentor[]>([]);
+    const [mentees, setMentees] = useState<Mentee[]>([]);
     const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
     const [mentorConnections, setMentorConnections] = useState<Record<string | number, ConnectionStatus>>({});
     const [notificationCount, setNotificationCount] = useState<number>(0);
@@ -141,8 +142,10 @@ const AppContent: React.FC = () => {
                     if (role === 'admin') {
                         const realRequests = await connectionService.fetchPendingRequests();
                         setConnectionRequests(realRequests);
+                        const realMentees = await fetchMentees();
+                        setMentees(realMentees);
                     }
-                    
+
                     // Cargar Mentoras (ya existente)
                     const mentorsData = await fetchMentors();
                     setMentors(mentorsData);
@@ -184,7 +187,7 @@ const AppContent: React.FC = () => {
         }
     };
 
-const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'rejected') => {
+    const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'rejected') => {
         try {
             // Llamada a la RPC (Función de Base de Datos)
             const { data, error } = await supabase.rpc('handle_connection_request', {
@@ -199,7 +202,7 @@ const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' |
 
             if (newStatus === 'accepted') {
                 const request = connectionRequests.find(r => r.id === requestId);
-                
+
                 if (request && data.mentorship_id) {
                     // Construir objeto Mentorship para la UI
                     const newMentorship: Mentorship = {
@@ -210,7 +213,7 @@ const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' |
                         sessions: [],
                         startDate: new Date().toISOString()
                     };
-                    
+
                     setMentorships(prev => [...prev, newMentorship]);
                     addToast(`Solicitud aceptada y mentoría creada.`, 'success');
                 }
@@ -398,6 +401,7 @@ const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' |
                                     mentorships={mentorships}
                                     requests={connectionRequests}
                                     mentors={mentors}
+                                    mentees={mentees}
                                     updateConnectionStatus={updateConnectionStatus}
                                     updateMentorMaxMentees={updateMentorMaxMentees}
                                     supportTickets={supportTickets}
