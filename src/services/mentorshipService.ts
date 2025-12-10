@@ -135,6 +135,26 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
     }
 };
 
+export const fetchActiveMentorshipsForUser = async (userId: string): Promise<string[]> => {
+    try {
+        const { data, error } = await supabase
+            .from('mentorships')
+            .select('mentor_id')
+            .eq('mentee_id', userId)
+            .eq('status', 'active');
+
+        if (error) {
+            console.error('Error fetching active mentorships:', error);
+            return [];
+        }
+
+        return (data || []).map((m: any) => m.mentor_id);
+    } catch (err) {
+        console.error('Unexpected error fetching active mentorships:', err);
+        return [];
+    }
+};
+
 export const fetchMentees = async (): Promise<Mentee[]> => {
     try {
         const { data, error } = await supabase

@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Mentor, Mentee } from '../types';
 import { useAuth } from '../context/AuthContext';
 import MentorCard from '../components/mentors/MentorCard';
 import { useProfileOptions } from '../hooks/useProfileOptions';
+import { fetchActiveMentorshipsForUser } from '../services/mentorshipService';
 
 interface MentorSearchPageProps {
     mentors: Mentor[];
@@ -123,6 +124,20 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
     const { interests: interestOptions, loading } = useProfileOptions();
     const currentUser = user as Mentee; // Assuming user is always a Mentee on this page
 
+    // NEW: State for active mentorships
+    const [activeMentorIds, setActiveMentorIds] = useState<Set<string>>(new Set());
+
+    // NEW: Fetch active mentorships on mount/user change
+    useEffect(() => {
+        const loadActiveMentorships = async () => {
+            if (currentUser?.id) {
+                const ids = await fetchActiveMentorshipsForUser(currentUser.id.toString());
+                setActiveMentorIds(new Set(ids));
+            }
+        };
+        loadActiveMentorships();
+    }, [currentUser?.id]);
+
     const mentorsWithAffinity = useMemo(() => {
         if (!currentUser) {
             console.log('MentorSearchPage: No current user found.');
@@ -133,6 +148,11 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
         console.log('MentorSearchPage: Mentors to process:', mentors);
 
         const filtered = mentors.filter(mentor => {
+            // NEW: Filter out active mentors
+            if (activeMentorIds.has(mentor.id.toString())) {
+                return false;
+            }
+
             const searchLower = searchTerm.toLowerCase();
             const mentorInterests = Array.isArray(mentor.interests) ? mentor.interests : [];
 
@@ -173,7 +193,7 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
             .filter(({ matchDetails }) => matchDetails.affinityScore > 0)
             .sort((a, b) => b.matchDetails.affinityScore - a.matchDetails.affinityScore);
 
-    }, [mentors, searchTerm, selectedCategory, currentUser]);
+    }, [mentors, searchTerm, selectedCategory, currentUser, activeMentorIds]);
 
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
