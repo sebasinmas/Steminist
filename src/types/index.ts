@@ -46,6 +46,7 @@ export interface Mentor extends BaseUser {
   longBio: string;
   mentorshipGoals: string[]; // Renamed from mentoringTopics
   maxMentees: number;
+  activeMenteesCount?: number;
   links?: Link[];
 }
 

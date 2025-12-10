@@ -5,7 +5,7 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews), availability_blocks(day_of_week, start_time, end_time)')
+            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews, max_mentees), availability_blocks(day_of_week, start_time, end_time), mentorships!mentor_id(id, status)')
             .eq('role', 'mentor');
 
         if (error) {
@@ -40,6 +40,11 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
                 });
             }
 
+            // Calculate active mentees count
+            const activeMenteesCount = user.mentorships
+                ? user.mentorships.filter((m: any) => m.status === 'active').length
+                : 0;
+
             return {
                 id: user.id, // Keep UUID from DB
                 name: fullName,
@@ -57,7 +62,8 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
                 reviews: profile?.total_reviews ?? 0,
                 longBio: profile?.bio || 'No hay biografía disponible.',
                 mentoringTopics: user.mentoring_topics || [],
-                maxMentees: user.max_mentees || 5,
+                maxMentees: profile?.max_mentees || 5,
+                activeMenteesCount: activeMenteesCount,
                 links: user.links || [],
                 mentorshipGoals: profile?.mentorship_goals || [],
                 interests: profile?.interests || []
@@ -68,5 +74,23 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
     } catch (err) {
         console.error('Unexpected error fetching mentors:', err);
         return [];
+    }
+};
+
+export const updateMentorMaxMentees = async (mentorId: string, maxMentees: number): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from('mentor_profiles')
+            .update({ max_mentees: maxMentees })
+            .eq('id', mentorId);
+
+        if (error) {
+            console.error('Error updating max mentees:', error);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error('Unexpected error updating max mentees:', err);
+        return false;
     }
 };

@@ -6,22 +6,22 @@ import { useToast } from '../../context/ToastContext';
 
 interface MentorManagementProps {
     mentors: Mentor[];
-    mentorMenteesCount: Record<number, number>;
-    onUpdateMaxMentees: (mentorId: number, maxMentees: number) => void;
+    mentorMenteesCount: Record<string | number, number>;
+    onUpdateMaxMentees: (mentorId: string | number, maxMentees: number) => void;
     onViewDetails: (mentor: Mentor) => void;
 }
 
 const MentorManagement: React.FC<MentorManagementProps> = ({ mentors, mentorMenteesCount, onUpdateMaxMentees, onViewDetails }) => {
-    const [editableCapacity, setEditableCapacity] = useState<Record<number, string>>({});
+    const [editableCapacity, setEditableCapacity] = useState<Record<string | number, string>>({});
     const [searchTerm, setSearchTerm] = useState('');
     const { addToast } = useToast();
 
-    const handleCapacityChange = (mentorId: number, value: string) => {
+    const handleCapacityChange = (mentorId: string | number, value: string) => {
         const numericValue = value.replace(/[^0-9]/g, '');
         setEditableCapacity(prev => ({ ...prev, [mentorId]: numericValue }));
     };
-    
-    const handleSave = (mentorId: number, e: React.MouseEvent) => {
+
+    const handleSave = (mentorId: string | number, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent modal from opening
         const value = editableCapacity[mentorId];
         if (value !== undefined && value !== '') {
@@ -29,9 +29,9 @@ const MentorManagement: React.FC<MentorManagementProps> = ({ mentors, mentorMent
             addToast(`Capacidad de ${mentors.find(m => m.id === mentorId)?.name} actualizada.`, 'success');
         }
     }
-    
+
     const filteredMentors = useMemo(() => {
-        return mentors.filter(mentor => 
+        return mentors.filter(mentor =>
             mentor.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [mentors, searchTerm]);
@@ -39,7 +39,7 @@ const MentorManagement: React.FC<MentorManagementProps> = ({ mentors, mentorMent
     return (
         <div>
             <h3 className="text-xl font-semibold mb-4 text-foreground/80">Configurar Capacidad de Mentoras</h3>
-             <div className="mb-4">
+            <div className="mb-4">
                 <input
                     type="text"
                     placeholder="Buscar mentora por nombre..."
@@ -52,15 +52,15 @@ const MentorManagement: React.FC<MentorManagementProps> = ({ mentors, mentorMent
                 <div className="max-h-[70vh] overflow-y-auto">
                     <ul className="divide-y divide-border">
                         {filteredMentors.map(mentor => {
-                            const currentMentees = mentorMenteesCount[mentor.id] || 0;
+                            const currentMentees = mentor.activeMenteesCount ?? (mentorMenteesCount[mentor.id] || 0);
                             const isAtCapacity = currentMentees >= mentor.maxMentees;
-                            
+
                             return (
-                                <li 
-                                    key={mentor.id} 
+                                <li
+                                    key={mentor.id}
                                     className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:bg-accent/50 transition-colors"
                                 >
-                                    <div 
+                                    <div
                                         className="flex items-center space-x-4 mb-4 sm:mb-0 flex-grow cursor-pointer"
                                         onClick={() => onViewDetails(mentor)}
                                     >
@@ -78,7 +78,7 @@ const MentorManagement: React.FC<MentorManagementProps> = ({ mentors, mentorMent
                                             <p className="text-sm text-muted-foreground">Mentoreadas Activas</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                             <input
+                                            <input
                                                 type="text"
                                                 pattern="[0-9]*"
                                                 value={editableCapacity[mentor.id] ?? mentor.maxMentees}
