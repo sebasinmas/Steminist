@@ -8,7 +8,7 @@ interface NotificationsPageProps {
     sessions: Session[];
     connectionRequests: ConnectionRequest[];
     updateSessionStatus: (sessionId: number, newStatus: Session['status']) => void;
-    updateConnectionStatus: (requestId: number, newStatus: 'accepted' | 'declined') => void;
+    updateConnectionStatus: (requestId: number, newStatus: 'accepted' | 'rejected') => void;
 }
 
 const NotificationsPage: React.FC<NotificationsPageProps> = ({ sessions, connectionRequests, updateSessionStatus, updateConnectionStatus }) => {

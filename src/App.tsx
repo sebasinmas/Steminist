@@ -1,13 +1,13 @@
 
+import { supabase } from './lib/supabase';
 import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
-
-// FIX: Removed incorrect '.js' extensions from imports to allow module resolution to find the .ts/.tsx files.
 import type { Page, UserRole, Theme, ConnectionStatus } from './types';
 import type { Mentor, Session, ConnectionRequest, Mentee, Mentorship, MentorSurvey, Attachment, SupportTicket } from './types';
 import { mockMentors, mockCurrentUserMentee, mockConnectionRequests, mockCurrentMentor, mockMentorships, mockPendingSessions } from './data/mockData';
-
+import { connectionService } from './services/connectionService';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useToast } from './context/ToastContext';
 import { ToastProvider } from './context/ToastContext';
 import { useGoogleTokenCapture } from './hooks/useGoogleTokenCapture';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -25,6 +25,8 @@ import RegisterPage from './pages/RegisterPage';
 import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './services/mentorService';
 import { fetchMentorships } from './services/mentorshipService';
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
+import { mentorService } from './services/mentorService';
+
 
 const App: React.FC = () => {
     return (
@@ -45,20 +47,22 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
     const { isLoggedIn, role, user } = useAuth();
-
+    const { addToast } = useToast();
+    
+    
     // Hook para capturar automáticamente el token de Google
     useGoogleTokenCapture();
 
     // The entire application state (mock data) is managed here
     // In a real app, this would be handled by a more robust state management library or hooks like React Query
     const [theme, setTheme] = useState<Theme>('dark');
-    const [mentorships, setMentorships] = useState<Mentorship[]>(mockMentorships);
     const [pendingSessions, setPendingSessions] = useState<Session[]>(mockPendingSessions);
-    const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(mockConnectionRequests);
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
-    const [mentorConnections, setMentorConnections] = useState<Record<number, ConnectionStatus>>({});
+    const [mentorConnections, setMentorConnections] = useState<Record<string | number, ConnectionStatus>>({});
     const [notificationCount, setNotificationCount] = useState<number>(0);
+    const [mentorships, setMentorships] = useState<Mentorship[]>([]);
+    const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
 
     useEffect(() => {
         const loadMentors = async () => {
@@ -125,7 +129,32 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
+    useEffect(() => {
+        const loadData = async () => {
+            if (isLoggedIn) {
+                try {
+                    // Cargar Mentorías (necesario para calcular capacidad de mentoras en admin)
+                    const realMentorships = await mentorService.fetchMentorships();
+                    setMentorships(realMentorships);
 
+                    // Cargar Solicitudes (solo si es admin, o podrías filtrar en backend por rol)
+                    if (role === 'admin') {
+                        const realRequests = await connectionService.fetchPendingRequests();
+                        setConnectionRequests(realRequests);
+                    }
+                    
+                    // Cargar Mentoras (ya existente)
+                    const mentorsData = await fetchMentors();
+                    setMentors(mentorsData);
+
+                } catch (error) {
+                    console.error("Error loading dashboard data:", error);
+                    addToast("Error cargando datos del sistema", 'error');
+                }
+            }
+        };
+        loadData();
+    }, [isLoggedIn, role]); // Se ejecuta al loguearse o cambiar rol
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -155,23 +184,87 @@ const AppContent: React.FC = () => {
         }
     };
 
-    const updateConnectionStatus = (requestId: number, newStatus: 'accepted' | 'declined') => {
-        const request = connectionRequests.find(r => r.id === requestId);
-        if (!request) return;
-        setConnectionRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
-        if (newStatus === 'accepted') {
-            setMentorConnections(prev => ({ ...prev, [request.mentor.id]: 'connected' }));
-            const newMentorship: Mentorship = { id: mentorships.length + 1, mentor: request.mentor, mentee: request.mentee, status: 'active', sessions: [], startDate: new Date().toISOString().split('T')[0] };
-            setMentorships(prev => [...prev, newMentorship]);
-        } else {
-            setMentorConnections(prev => ({ ...prev, [request.mentor.id]: 'declined' }));
+const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'rejected') => {
+        try {
+            // Llamada a la RPC (Función de Base de Datos)
+            const { data, error } = await supabase.rpc('handle_connection_request', {
+                request_id: requestId,
+                new_status: newStatus
+            });
+
+            if (error) throw error;
+
+            // Actualizar UI: Remover de solicitudes pendientes
+            setConnectionRequests(prev => prev.filter(r => r.id !== requestId));
+
+            if (newStatus === 'accepted') {
+                const request = connectionRequests.find(r => r.id === requestId);
+                
+                if (request && data.mentorship_id) {
+                    // Construir objeto Mentorship para la UI
+                    const newMentorship: Mentorship = {
+                        id: data.mentorship_id,
+                        mentor: request.mentor,
+                        mentee: request.mentee,
+                        status: 'active',
+                        sessions: [],
+                        startDate: new Date().toISOString()
+                    };
+                    
+                    setMentorships(prev => [...prev, newMentorship]);
+                    addToast(`Solicitud aceptada y mentoría creada.`, 'success');
+                }
+            } else {
+                addToast(`Solicitud rechazada.`, 'info');
+            }
+        } catch (error: any) {
+            console.error("Error updating connection status:", error);
+            addToast(`Error al procesar la solicitud: ${error.message}`, 'error');
         }
     };
 
-    const sendConnectionRequest = (mentor: Mentor, motivationLetter: string) => {
-        setMentorConnections(prev => ({ ...prev, [mentor.id]: 'pending' }));
-        const newRequest: ConnectionRequest = { id: connectionRequests.length + 2, mentor, mentee: mockCurrentUserMentee, status: 'pending', motivationLetter };
-        setConnectionRequests(prev => [newRequest, ...prev]);
+    const sendConnectionRequest = async (
+        mentor: Mentor,
+        motivationLetter: string,
+        interests: string[],
+        motivations: string[],
+    ) => {
+        if (!user) return;
+
+        setMentorConnections(prev => ({ ...prev, [String(mentor.id)]: 'pending' }));
+
+        try {
+            const newRequestData = await connectionService.createRequest(
+                String(user.id),
+                String(mentor.id),
+                motivationLetter,
+                interests,
+                motivations,
+            );
+            console.log('Nueva request desde Supabase:', newRequestData);
+
+            const newRequest: ConnectionRequest = {
+                id: newRequestData.id,
+                mentor: mentor,
+                mentee: user as Mentee,
+                status: 'pending',
+                motivationLetter: newRequestData.motivation_letter,
+                interests: newRequestData.interest || interests,
+                motivations: newRequestData.motivation || motivations,
+            };
+
+            setConnectionRequests(prev => [newRequest, ...prev]);
+            addToast('Solicitud enviada correctamente', 'success');
+        } catch (error: any) {
+            console.error('Error enviando solicitud:', error);
+            addToast(`Error al enviar solicitud: ${error?.message ?? String(error)}`, 'error');
+            // Revertir estado si falla
+            setMentorConnections(prev => {
+                const newState = { ...prev };
+                delete newState[String(mentor.id)];
+                return newState;
+            });
+        }
     };
 
     const addSession = (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
@@ -247,13 +340,7 @@ const AppContent: React.FC = () => {
     // Wrapper for MentorProfilePage to handle data fetching based on URL param
     const MentorProfilePageWrapper = () => {
         const { mentorId } = useParams<{ mentorId: string }>();
-        // Handle both numeric and string IDs
-        const mentor = mentors.find(m => {
-            if (typeof m.id === 'number') {
-                return m.id === parseInt(mentorId || '');
-            }
-            return String(m.id) === mentorId;
-        });
+        const mentor = mentors.find(m => String(m.id) === (mentorId || ''));
         if (!mentor) {
             return <Navigate to="/discover" replace />;
         }

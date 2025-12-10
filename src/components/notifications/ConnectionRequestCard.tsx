@@ -6,7 +6,7 @@ import { useToast } from '../../context/ToastContext';
 
 interface ConnectionRequestCardProps {
     request: ConnectionRequest;
-    onStatusChange: (requestId: number, newStatus: 'accepted' | 'declined') => void;
+    onStatusChange: (requestId: number, newStatus: 'accepted' | 'rejected') => void;
 }
 
 const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, onStatusChange }) => {
@@ -19,7 +19,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, 
     };
 
     const handleDecline = () => {
-        onStatusChange(request.id, 'declined');
+        onStatusChange(request.id, 'rejected');
         addToast(`Conexión con ${mentee.name} rechazada.`, 'info');
     };
 

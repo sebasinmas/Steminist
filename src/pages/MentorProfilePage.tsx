@@ -6,11 +6,14 @@ import Tag from '../components/common/Tag';
 import ConnectionRequestModal from '../components/mentors/ConnectionRequestModal';
 import { CheckCircleIcon, LinkIcon } from '../components/common/Icons';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
+import { connectionService } from '../services/connectionService';
+import { useEffect } from 'react';
 
 interface MentorProfilePageProps {
     mentor: Mentor;
     connectionStatus: ConnectionStatus;
-    onSendConnectionRequest: (mentor: Mentor, motivationLetter: string) => void;
+    onSendConnectionRequest: (mentor: Mentor, motivationLetter: string, interests: string[], motivations: string[]) => void;
 }
 
 const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectionStatus, onSendConnectionRequest }) => {
@@ -18,10 +21,9 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
     const navigate = useNavigate();
     const { addToast } = useToast();
 
-    const handleSendRequest = (motivationLetter: string) => {
-        onSendConnectionRequest(mentor, motivationLetter);
+    const handleSendRequest = (motivationLetter: string, interests: string[], motivations: string[]) => {
+        onSendConnectionRequest(mentor, motivationLetter, interests, motivations);
         setIsRequestingConnection(false);
-        addToast('Solicitud de conexión enviada con éxito.', 'success');
     };
 
     const renderActionButton = () => {
@@ -32,12 +34,28 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
                 return <Button size="lg" className="w-full" disabled>Solicitud Enviada</Button>;
             case 'connected':
                 return <Button onClick={() => navigate('/dashboard')} size="lg" className="w-full">Ir al Panel para Agendar</Button>;
-            case 'declined':
+            case 'rejected':
                 return <Button size="lg" className="w-full" disabled>Conexión Rechazada</Button>;
             default:
                 return null;
         }
     };
+
+    const { user } = useAuth();
+
+    useEffect(() => {
+        const checkStatus = async () => {
+            if (user && mentor) {
+                try {
+                    const status = await connectionService.checkConnectionStatus(user.id, mentor.id);
+
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        };
+        checkStatus();
+    }, [user, mentor]);
 
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">

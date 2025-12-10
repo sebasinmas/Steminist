@@ -14,7 +14,7 @@ export type UserRole = 'mentee' | 'mentor' | 'admin';
 
 export type Theme = 'light' | 'dark';
 
-export type ConnectionStatus = 'none' | 'pending' | 'connected' | 'declined';
+export type ConnectionStatus = 'none' | 'pending' | 'connected' | 'rejected';
 
 export interface Link {
   title: string;
@@ -111,8 +111,10 @@ export interface ConnectionRequest {
   id: number;
   mentor: Mentor;
   mentee: Mentee;
-  status: 'pending' | 'accepted' | 'declined';
+  status: 'pending' | 'accepted' | 'rejected';
   motivationLetter: string;
+  interests?: string[];
+  motivations?: string[];
 }
 
 export interface SupportTicket {

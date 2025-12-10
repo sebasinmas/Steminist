@@ -7,7 +7,7 @@ interface ConnectionRequestModalProps {
     mentor: Mentor;
     isOpen: boolean;
     onClose: () => void;
-    onSendRequest: (motivationLetter: string) => void;
+    onSendRequest: (motivationLetter: string, interests: string[], motivations: string[]) => void;
 }
 
 const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor, isOpen, onClose, onSendRequest }) => {
@@ -31,9 +31,9 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
     };
 
     const handleSubmit = () => {
-        const motivationLetter = `**Temas de Interés:**\n- ${selectedTopics.join('\n- ')}\n\n**Objetivos:**\n- ${selectedGoals.join('\n- ')}\n\n**Mensaje Adicional:**\n${additionalMessage || 'N/A'}`;
+        const motivationLetter = additionalMessage || 'N/A';
 
-        onSendRequest(motivationLetter);
+        onSendRequest(motivationLetter, selectedTopics, selectedGoals);
 
         // Reset state
         setSelectedTopics([]);
@@ -76,21 +76,19 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
                         </div>
                     </div>
 
-                    {/* Goals Section */}
+                    {/* Goals Section (now buttons like Interests) */}
                     <div>
                         <h3 className="text-lg font-semibold mb-2">2. Tus Objetivos</h3>
                         <p className="text-sm text-muted-foreground mb-3">Elige tus principales objetivos para esta mentoría.</p>
-                        <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
                             {mentorshipGoals.map(goal => (
-                                <label key={goal} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedGoals.includes(goal)}
-                                        onChange={() => handleGoalToggle(goal)}
-                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                                    />
-                                    <span className="text-foreground">{goal}</span>
-                                </label>
+                                <button
+                                    key={goal}
+                                    onClick={() => handleGoalToggle(goal)}
+                                    className={`text-sm font-semibold px-3 py-1.5 rounded-full border-2 transition-colors ${selectedGoals.includes(goal) ? 'bg-primary border-primary text-primary-foreground' : 'bg-transparent border-border hover:bg-accent'}`}
+                                >
+                                    {goal}
+                                </button>
                             ))}
                         </div>
                     </div>
