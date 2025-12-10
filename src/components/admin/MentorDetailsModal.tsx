@@ -20,7 +20,7 @@ const DetailStat: React.FC<{ icon: React.ReactNode; value: string | number; labe
 
 
 const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentorships, onClose }) => {
-    
+
     const mentorMentorships = useMemo(() => {
         if (!mentor) return [];
         return mentorships.filter(m => m.mentor.id === mentor.id);
@@ -31,11 +31,10 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
         const active = mentorMentorships.filter(m => m.status === 'active').length;
         const completed = mentorMentorships.filter(m => m.status === 'completed').length;
         const allSessions = mentorMentorships.flatMap(m => m.sessions);
-        const completedSessions = allSessions.filter(s => s.status === 'completed');
-        const totalRatings = completedSessions.reduce((acc, s) => acc + (s.rating || 0), 0);
-        const avgRating = completedSessions.length > 0 ? (totalRatings / completedSessions.length).toFixed(2) : '5.00';
-        
-        return { active, completed, completedSessions: completedSessions.length, avgRating };
+        const completedSessions = allSessions.filter(s => s.status === 'completed' || s.status === 'active');
+        const displayRating = mentor.rating.toFixed(2);
+
+        return { active, completed, completedSessions: completedSessions.length, displayRating };
     }, [mentor, mentorMentorships]);
 
 
@@ -47,7 +46,7 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
                 <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                     <XIcon className="w-6 h-6" />
                 </button>
-                
+
                 <div className="flex flex-col items-center text-center pb-6 border-b border-border">
                     <img src={mentor.avatarUrl} alt={mentor.name} className="w-24 h-24 rounded-full mb-4" />
                     <h2 className="text-3xl font-bold">{mentor.name}</h2>
@@ -59,7 +58,7 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
                     <DetailStat icon={<BriefcaseIcon />} value={stats.active} label="Mentorías Activas" />
                     <DetailStat icon={<CheckCircleIcon />} value={stats.completed} label="Mentorías Completadas" />
                     <DetailStat icon={<ClockIcon />} value={stats.completedSessions} label="Sesiones Completadas" />
-                    <DetailStat icon={<StarIcon />} value={stats.avgRating} label="Rating Promedio" />
+                    <DetailStat icon={<StarIcon />} value={stats.displayRating} label="Rating Promedio" />
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2">
@@ -69,7 +68,7 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
                             mentorMentorships.map(m => (
                                 <div key={m.id} className="bg-secondary p-3 rounded-lg flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
-                                        <img src={m.mentee.avatarUrl} alt={m.mentee.name} className="w-10 h-10 rounded-full"/>
+                                        <img src={m.mentee.avatarUrl} alt={m.mentee.name} className="w-10 h-10 rounded-full" />
                                         <div>
                                             <p className="font-semibold">{m.mentee.name}</p>
                                             <p className="text-sm text-muted-foreground">Mentoreada | Inicio: {new Date(m.startDate).toLocaleDateString('es-ES')}</p>

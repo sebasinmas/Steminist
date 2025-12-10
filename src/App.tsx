@@ -23,6 +23,7 @@ import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './services/mentorService';
+import { fetchMentorships } from './services/mentorshipService';
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 
 const App: React.FC = () => {
@@ -82,8 +83,20 @@ const AppContent: React.FC = () => {
             }
         };
 
+        const loadMentorships = async () => {
+            if (isLoggedIn) {
+                try {
+                    const data = await fetchMentorships();
+                    setMentorships(data);
+                } catch (error) {
+                    console.error("Failed to fetch mentorships:", error);
+                }
+            }
+        };
+
         loadMentors();
         loadSupportTickets();
+        loadMentorships();
     }, [isLoggedIn, role]);
 
     useEffect(() => {

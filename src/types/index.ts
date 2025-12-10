@@ -75,7 +75,8 @@ export type SessionStatus =
   | 'cancelled'
   | 'needs_confirmation'
   | 'rescheduled'
-  | 'termination_requested';
+  | 'termination_requested'
+  | 'active';
 
 export interface Session {
   id: number;
