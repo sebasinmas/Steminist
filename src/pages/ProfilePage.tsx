@@ -253,7 +253,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         bio: mentee.bio || null,
                         interests: mentee.interests || [],
                         mentorship_goals: mentee.mentorshipGoals || [],
-                        role_level: (mentee as any).roleLevel || null,
                         pronouns: mentee.pronouns || null,
                         is_neurodivergent: !!mentee.neurodivergence,
                         neurodivergence_details: mentee.neurodivergence || null,

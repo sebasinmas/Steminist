@@ -55,7 +55,7 @@ async function fetchMenteeProfile(userId: string) {
     const { data, error } = await supabase
         .from('mentee_profiles')
         .select(
-            'title, company, bio, interests, mentorship_goals, role_level, pronouns, is_neurodivergent, neurodivergence_details',
+            'title, company, bio, interests, mentorship_goals, pronouns, is_neurodivergent, neurodivergence_details',
         )
         .eq('user_id', userId)
         .maybeSingle();
@@ -146,7 +146,6 @@ function buildMenteeUser(base: any, profile: any | null): Mentee {
 
         company: profile?.company ?? '',
         title: profile?.title ?? '',
-        // experience: profile?.role_level ?? undefined,
         timezone: base.timezone ?? undefined,
         motivations: [],
 
@@ -506,7 +505,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                 bio: data.bio || '',
                 interests: data.interests || [],
                 mentorship_goals: data.mentorshipGoals || [],
-                // role_level: data.experience || null,
                 pronouns: data.pronouns || '',
                 is_neurodivergent: !!data.neurodivergence,
                 neurodivergence_details: data.neurodivergence || '',
