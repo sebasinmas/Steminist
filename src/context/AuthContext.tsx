@@ -64,6 +64,41 @@ async function fetchMenteeProfile(userId: string) {
     return data;
 }
 
+async function fetchAvailability(userId: string) {
+    const { data, error } = await supabase
+        .from('availability_blocks')
+        .select('specific_date, start_time')
+        .eq('user_id', userId)
+        .eq('is_booked', false); // opcional: solo slots no reservados
+
+    if (error) throw error;
+
+    // availability: { "YYYY-MM-DD": ["HH:MM", "HH:MM", ...] }
+    const availability: { [date: string]: string[] } = {};
+
+    (data || []).forEach((block: any) => {
+        const dateKey: string = block.specific_date; // "2025-12-18"
+        if (!dateKey) return;
+
+        // start_time viene como "HH:MM:SS" -> "HH:MM"
+        const time = block.start_time.slice(0, 5);
+
+        if (!availability[dateKey]) {
+            availability[dateKey] = [];
+        }
+        if (!availability[dateKey].includes(time)) {
+            availability[dateKey].push(time);
+        }
+    });
+
+    // Ordenar las horas en cada fecha
+    Object.keys(availability).forEach(dateKey => {
+        availability[dateKey].sort();
+    });
+
+    return availability;
+}
+
 // ---------------- BUILDERS TIPADOS (SIN CASTS PELIGROSOS) ---------------- //
 
 function buildAdminUserFromRow(row: any): AdminUser {
@@ -167,16 +202,25 @@ async function enrichUserFromSchema(userId: string): Promise<User | null> {
     const role = (baseUserRow.role || 'mentee') as UserRole;
 
     if (role === 'mentor') {
-        const mentorProfile = await fetchMentorProfile(userId);
-        return buildMentorUser(baseUserRow, mentorProfile);
+        const [mentorProfile, availability] = await Promise.all([
+            fetchMentorProfile(userId),
+            fetchAvailability(userId),
+        ]);
+        const baseMentor = buildMentorUser(baseUserRow, mentorProfile);
+        // Sobrescribimos availability: {} del builder con lo que viene de BD
+        return { ...baseMentor, availability };
     }
 
     if (role === 'mentee') {
-        const menteeProfile = await fetchMenteeProfile(userId);
-        return buildMenteeUser(baseUserRow, menteeProfile);
+        const [menteeProfile, availability] = await Promise.all([
+            fetchMenteeProfile(userId),
+            fetchAvailability(userId),
+        ]);
+        const baseMentee = buildMenteeUser(baseUserRow, menteeProfile);
+        return { ...baseMentee, availability };
     }
 
-    // Para admin u otros roles, devolvemos el subtipo AdminUser
+    // Para admin u otros roles, devolvemos el subtipo AdminUser (sin availability)
     return buildAdminUserFromRow(baseUserRow);
 }
 
@@ -236,25 +280,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                 return null;
             }
 
-            // 2) Según rol, leer perfil extendido y construir User tipado
+            // 2) Según rol, leer perfil extendido + availability y construir User tipado
             const role = (baseUserRow.role || 'mentee') as UserRole;
             let fullUser: User;
 
             if (role === 'mentor') {
-                const mentorProfile = await fetchMentorProfile(userId);
-                fullUser = buildMentorUser(baseUserRow, mentorProfile);
+                const [mentorProfile, availability] = await Promise.all([
+                    fetchMentorProfile(userId),
+                    fetchAvailability(userId),
+                ]);
+                const baseMentor = buildMentorUser(baseUserRow, mentorProfile);
+                fullUser = { ...baseMentor, availability };
             } else if (role === 'mentee') {
-                const menteeProfile = await fetchMenteeProfile(userId);
-                fullUser = buildMenteeUser(baseUserRow, menteeProfile);
+                const [menteeProfile, availability] = await Promise.all([
+                    fetchMenteeProfile(userId),
+                    fetchAvailability(userId),
+                ]);
+                const baseMentee = buildMenteeUser(baseUserRow, menteeProfile);
+                fullUser = { ...baseMentee, availability };
             } else {
                 fullUser = buildAdminUserFromRow(baseUserRow);
             }
 
             const totalTime = performance.now() - startTime;
             console.log(
-                `✨ [AuthContext] Usuario completo construido (${totalTime.toFixed(
-                    2,
-                )}ms total)`,
+                `✨ [AuthContext] Usuario completo construido (${totalTime.toFixed(2)}ms total)`,
                 fullUser,
             );
             fetchingProfileRef.current.delete(userId);
