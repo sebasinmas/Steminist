@@ -29,7 +29,6 @@ export interface RegisterMenteeDTO extends RegisterGenericDTO {
 
 export interface RegisterMentorDTO extends RegisterGenericDTO {
     role: 'mentor';
-    long_bio?: string;
 }
 
 export type RegisterDTO = RegisterMenteeDTO | RegisterMentorDTO;

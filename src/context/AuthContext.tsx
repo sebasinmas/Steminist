@@ -252,10 +252,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     title: dataFromRegisterForm.title || null,
                     company: dataFromRegisterForm.company || null,
                     bio: dataFromRegisterForm.bio || null,
-                    long_bio: dataFromRegisterForm.long_bio || null,
                     user_id: AuthUser.user.id,
                     max_mentees: 3 // Valor por defecto
-                    
                 }]);
                 if (insertMentorError) throw insertMentorError;
             }
