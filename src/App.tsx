@@ -1,8 +1,6 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
-
-// FIX: Removed incorrect '.js' extensions from imports to allow module resolution to find the .ts/.tsx files.
 import type { Page, UserRole, Theme, ConnectionStatus } from './types';
 import type { Mentor, Session, ConnectionRequest, Mentee, Mentorship, MentorSurvey, Attachment, SupportTicket } from './types';
 import { mockMentors, mockCurrentUserMentee, mockConnectionRequests, mockCurrentMentor, mockMentorships, mockPendingSessions } from './data/mockData';
@@ -24,6 +22,8 @@ import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { fetchMentors } from './services/mentorService';
+import { mentorService } from './services/mentorService';
+
 
 const App: React.FC = () => {
     return (
@@ -46,19 +46,20 @@ const AppContent: React.FC = () => {
     const { isLoggedIn, role, user } = useAuth();
     const { addToast } = useToast();
     
+    
     // Hook para capturar automáticamente el token de Google
     useGoogleTokenCapture();
 
     // The entire application state (mock data) is managed here
     // In a real app, this would be handled by a more robust state management library or hooks like React Query
     const [theme, setTheme] = useState<Theme>('dark');
-    const [mentorships, setMentorships] = useState<Mentorship[]>(mockMentorships);
     const [pendingSessions, setPendingSessions] = useState<Session[]>(mockPendingSessions);
-    const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(mockConnectionRequests);
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
     const [mentorConnections, setMentorConnections] = useState<Record<string | number, ConnectionStatus>>({});
     const [notificationCount, setNotificationCount] = useState<number>(0);
+    const [mentorships, setMentorships] = useState<Mentorship[]>([]);
+    const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
 
     useEffect(() => {
         const loadMentors = async () => {
@@ -100,7 +101,32 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
+    useEffect(() => {
+        const loadData = async () => {
+            if (isLoggedIn) {
+                try {
+                    // Cargar Mentorías (necesario para calcular capacidad de mentoras en admin)
+                    const realMentorships = await mentorService.fetchMentorships();
+                    setMentorships(realMentorships);
 
+                    // Cargar Solicitudes (solo si es admin, o podrías filtrar en backend por rol)
+                    if (role === 'admin') {
+                        const realRequests = await connectionService.fetchPendingRequests();
+                        setConnectionRequests(realRequests);
+                    }
+                    
+                    // Cargar Mentoras (ya existente)
+                    const mentorsData = await fetchMentors();
+                    setMentors(mentorsData);
+
+                } catch (error) {
+                    console.error("Error loading dashboard data:", error);
+                    addToast("Error cargando datos del sistema", 'error');
+                }
+            }
+        };
+        loadData();
+    }, [isLoggedIn, role]); // Se ejecuta al loguearse o cambiar rol
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -130,16 +156,44 @@ const AppContent: React.FC = () => {
         }
     };
 
-    const updateConnectionStatus = (requestId: number, newStatus: 'accepted' | 'declined') => {
-        const request = connectionRequests.find(r => r.id === requestId);
-        if (!request) return;
-        setConnectionRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
-        if (newStatus === 'accepted') {
-            setMentorConnections(prev => ({ ...prev, [request.mentor.id]: 'connected' }));
-            const newMentorship: Mentorship = { id: mentorships.length + 1, mentor: request.mentor, mentee: request.mentee, status: 'active', sessions: [], startDate: new Date().toISOString().split('T')[0] };
-            setMentorships(prev => [...prev, newMentorship]);
-        } else {
-            setMentorConnections(prev => ({ ...prev, [request.mentor.id]: 'declined' }));
+const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'declined') => {
+        try {
+            // Actualizar en BD: connection_requests
+            await connectionService.updateRequestStatus(requestId, newStatus);
+
+            // Actualizar estado local UI (Solicitudes)
+            setConnectionRequests(prev => prev.filter(r => r.id !== requestId));
+
+            if (newStatus === 'accepted') {
+                // Si se acepta, crear la mentoría en BD
+                const request = connectionRequests.find(r => r.id === requestId);
+                if (request) {
+                    const newMentorshipData = await mentorService.createMentorship(
+                        request.mentor.id, 
+                        request.mentee.id, 
+                        requestId
+                    );
+                    
+                    // Construir objeto Mentorship para la UI (simplificado para actualización optimista)
+                    const newMentorship: Mentorship = {
+                        id: newMentorshipData.id, // ID real de DB
+                        mentor: request.mentor,
+                        mentee: request.mentee,
+                        status: 'active',
+                        sessions: [],
+                        startDate: new Date().toISOString()
+                    };
+                    
+                    // Actualizar estado local UI (Mentorías)
+                    setMentorships(prev => [...prev, newMentorship]);
+                    addToast(`Solicitud aceptada y mentoría creada.`, 'success');
+                }
+            } else {
+                addToast(`Solicitud rechazada.`, 'info');
+            }
+        } catch (error) {
+            console.error("Error updating connection status:", error);
+            addToast("Error al procesar la solicitud", 'error');
         }
     };
 
