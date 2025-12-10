@@ -6,8 +6,9 @@ import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-
 import type { Page, UserRole, Theme, ConnectionStatus } from './types';
 import type { Mentor, Session, ConnectionRequest, Mentee, Mentorship, MentorSurvey, Attachment, SupportTicket } from './types';
 import { mockMentors, mockCurrentUserMentee, mockConnectionRequests, mockCurrentMentor, mockMentorships, mockPendingSessions } from './data/mockData';
-
+import { connectionService } from './services/connectionService';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useToast } from './context/ToastContext';
 import { ToastProvider } from './context/ToastContext';
 import { useGoogleTokenCapture } from './hooks/useGoogleTokenCapture';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -43,6 +44,7 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
     const { isLoggedIn, role, user } = useAuth();
+    const { addToast } = useToast();
     
     // Hook para capturar automáticamente el token de Google
     useGoogleTokenCapture();
@@ -55,7 +57,7 @@ const AppContent: React.FC = () => {
     const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>(mockConnectionRequests);
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
-    const [mentorConnections, setMentorConnections] = useState<Record<number, ConnectionStatus>>({});
+    const [mentorConnections, setMentorConnections] = useState<Record<string | number, ConnectionStatus>>({});
     const [notificationCount, setNotificationCount] = useState<number>(0);
 
     useEffect(() => {
@@ -141,10 +143,48 @@ const AppContent: React.FC = () => {
         }
     };
 
-    const sendConnectionRequest = (mentor: Mentor, motivationLetter: string) => {
-        setMentorConnections(prev => ({ ...prev, [mentor.id]: 'pending' }));
-        const newRequest: ConnectionRequest = { id: connectionRequests.length + 2, mentor, mentee: mockCurrentUserMentee, status: 'pending', motivationLetter };
-        setConnectionRequests(prev => [newRequest, ...prev]);
+    const sendConnectionRequest = async (
+        mentor: Mentor,
+        motivationLetter: string,
+        interests: string[],
+        motivations: string[],
+    ) => {
+        if (!user) return;
+
+        setMentorConnections(prev => ({ ...prev, [String(mentor.id)]: 'pending' }));
+
+        try {
+            const newRequestData = await connectionService.createRequest(
+                String(user.id),
+                String(mentor.id),
+                motivationLetter,
+                interests,
+                motivations,
+            );
+            console.log('Nueva request desde Supabase:', newRequestData);
+
+            const newRequest: ConnectionRequest = {
+                id: newRequestData.id,
+                mentor: mentor,
+                mentee: user as Mentee,
+                status: 'pending',
+                motivationLetter: newRequestData.motivation_letter,
+                interests: newRequestData.interest || interests,
+                motivations: newRequestData.motivation || motivations,
+            };
+
+            setConnectionRequests(prev => [newRequest, ...prev]);
+            addToast('Solicitud enviada correctamente', 'success');
+        } catch (error: any) {
+            console.error('Error enviando solicitud:', error);
+            addToast(`Error al enviar solicitud: ${error?.message ?? String(error)}`, 'error');
+            // Revertir estado si falla
+            setMentorConnections(prev => {
+                const newState = { ...prev };
+                delete newState[String(mentor.id)];
+                return newState;
+            });
+        }
     };
 
     const addSession = (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
@@ -179,13 +219,7 @@ const AppContent: React.FC = () => {
     // Wrapper for MentorProfilePage to handle data fetching based on URL param
     const MentorProfilePageWrapper = () => {
         const { mentorId } = useParams<{ mentorId: string }>();
-        // Handle both numeric and string IDs
-        const mentor = mentors.find(m => {
-            if (typeof m.id === 'number') {
-                return m.id === parseInt(mentorId || '');
-            }
-            return String(m.id) === mentorId;
-        });
+        const mentor = mentors.find(m => String(m.id) === (mentorId || ''));
         if (!mentor) {
             return <Navigate to="/discover" replace />;
         }

@@ -111,6 +111,8 @@ export interface ConnectionRequest {
   mentee: Mentee;
   status: 'pending' | 'accepted' | 'declined';
   motivationLetter: string;
+  interests?: string[];
+  motivations?: string[];
 }
 
 export interface SupportTicket {

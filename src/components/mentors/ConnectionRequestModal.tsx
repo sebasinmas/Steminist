@@ -7,7 +7,7 @@ interface ConnectionRequestModalProps {
     mentor: Mentor;
     isOpen: boolean;
     onClose: () => void;
-    onSendRequest: (motivationLetter: string) => void;
+    onSendRequest: (motivationLetter: string, interests: string[], motivations: string[]) => void;
 }
 
 const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor, isOpen, onClose, onSendRequest }) => {
@@ -31,9 +31,9 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({ mentor,
     };
 
     const handleSubmit = () => {
-        const motivationLetter = `**Temas de Interés:**\n- ${selectedTopics.join('\n- ')}\n\n**Objetivos:**\n- ${selectedGoals.join('\n- ')}\n\n**Mensaje Adicional:**\n${additionalMessage || 'N/A'}`;
+        const motivationLetter = additionalMessage || 'N/A';
 
-        onSendRequest(motivationLetter);
+        onSendRequest(motivationLetter, selectedTopics, selectedGoals);
 
         // Reset state
         setSelectedTopics([]);
