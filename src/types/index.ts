@@ -99,7 +99,7 @@ export interface Session {
   updated_at?: string;
 }
 
-export type MentorshipStatus = 'active' | 'completed' | 'termination_requested';
+export type MentorshipStatus = 'active' | 'completed' | 'termination_requested' | 'terminated';
 
 export interface Mentorship {
   id: number;

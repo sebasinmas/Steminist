@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Mentee, Mentorship } from '../../types';
-import { XIcon, BriefcaseIcon, CheckCircleIcon, ClockIcon, StarIcon } from '../common/Icons';
+import { XIcon, BriefcaseIcon, CheckCircleIcon, ClockIcon, StarIcon, XCircleIcon } from '../common/Icons';
 
 interface MenteeDetailsModalProps {
     mentee: Mentee | null;
@@ -30,9 +30,10 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
         if (!mentee) return null;
         const active = menteeMentorships.filter(m => m.status === 'active').length;
         const completed = menteeMentorships.filter(m => m.status === 'completed').length;
+        const terminated = menteeMentorships.filter(m => m.status === 'terminated').length;
         const allSessions = menteeMentorships.flatMap(m => m.sessions);
         const completedSessions = allSessions.filter(s => s.status === 'completed');
-        return { active, completed, completedSessions: completedSessions.length };
+        return { active, completed, terminated, completedSessions: completedSessions.length };
     }, [mentee, menteeMentorships]);
 
 
@@ -55,6 +56,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6">
                     <DetailStat icon={<BriefcaseIcon />} value={stats.active} label="Mentorías Activas" />
                     <DetailStat icon={<CheckCircleIcon />} value={stats.completed} label="Mentorías Completadas" />
+                    <DetailStat icon={<XCircleIcon />} value={stats.terminated} label="Mentorías Terminadas" />
                     <DetailStat icon={<ClockIcon />} value={stats.completedSessions} label="Sesiones Completadas" />
                 </div>
 
@@ -71,8 +73,11 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                                             <p className="text-sm text-muted-foreground">Mentora | Inicio: {new Date(m.startDate).toLocaleDateString('es-ES')}</p>
                                         </div>
                                     </div>
-                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${m.status === 'active' ? 'bg-green-500/80 text-white' : 'bg-gray-500 text-white'}`}>
-                                        {m.status === 'active' ? 'Activa' : 'Completada'}
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${m.status === 'active' ? 'bg-green-500/80 text-white' :
+                                            m.status === 'terminated' ? 'bg-red-500/80 text-white' :
+                                                'bg-gray-500 text-white'
+                                        }`}>
+                                        {m.status === 'active' ? 'Activa' : m.status === 'terminated' ? 'Terminada' : 'Completada'}
                                     </span>
                                 </div>
                             ))
