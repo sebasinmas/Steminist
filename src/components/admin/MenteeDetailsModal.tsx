@@ -20,7 +20,7 @@ const DetailStat: React.FC<{ icon: React.ReactNode; value: string | number; labe
 
 
 const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentorships, onClose }) => {
-    
+
     const menteeMentorships = useMemo(() => {
         if (!mentee) return [];
         return mentorships.filter(m => m.mentee.id === mentee.id);
@@ -32,11 +32,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
         const completed = menteeMentorships.filter(m => m.status === 'completed').length;
         const allSessions = menteeMentorships.flatMap(m => m.sessions);
         const completedSessions = allSessions.filter(s => s.status === 'completed');
-        const ratedSessions = completedSessions.filter(s => s.rating);
-        const totalRatings = ratedSessions.reduce((acc, s) => acc + (s.rating || 0), 0);
-        const avgRatingGiven = ratedSessions.length > 0 ? (totalRatings / ratedSessions.length).toFixed(2) : '5.00';
-        
-        return { active, completed, completedSessions: completedSessions.length, avgRatingGiven };
+        return { active, completed, completedSessions: completedSessions.length };
     }, [mentee, menteeMentorships]);
 
 
@@ -48,7 +44,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                 <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                     <XIcon className="w-6 h-6" />
                 </button>
-                
+
                 <div className="flex flex-col items-center text-center pb-6 border-b border-border">
                     <img src={mentee.avatarUrl} alt={mentee.name} className="w-24 h-24 rounded-full mb-4" />
                     <h2 className="text-3xl font-bold">{mentee.name}</h2>
@@ -60,7 +56,6 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                     <DetailStat icon={<BriefcaseIcon />} value={stats.active} label="Mentorías Activas" />
                     <DetailStat icon={<CheckCircleIcon />} value={stats.completed} label="Mentorías Completadas" />
                     <DetailStat icon={<ClockIcon />} value={stats.completedSessions} label="Sesiones Completadas" />
-                    <DetailStat icon={<StarIcon />} value={stats.avgRatingGiven} label="Rating Promedio" />
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2">
@@ -70,7 +65,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                             menteeMentorships.map(m => (
                                 <div key={m.id} className="bg-secondary p-3 rounded-lg flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
-                                        <img src={m.mentor.avatarUrl} alt={m.mentor.name} className="w-10 h-10 rounded-full"/>
+                                        <img src={m.mentor.avatarUrl} alt={m.mentor.name} className="w-10 h-10 rounded-full" />
                                         <div>
                                             <p className="font-semibold">{m.mentor.name}</p>
                                             <p className="text-sm text-muted-foreground">Mentora | Inicio: {new Date(m.startDate).toLocaleDateString('es-ES')}</p>

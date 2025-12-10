@@ -93,6 +93,10 @@ export interface Session {
   feedback?: string;
   mentor?: Mentor;
   mentee?: Mentee;
+  video_link?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type MentorshipStatus = 'active' | 'completed' | 'termination_requested';

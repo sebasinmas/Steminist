@@ -24,7 +24,11 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                     status,
                     topic,
                     mentee_goals,
-                    duration_minutes
+                    duration_minutes,
+                    video_link,
+                    notes,
+                    created_at,
+                    updated_at
                 )
             `);
 
@@ -105,7 +109,11 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                     mentor: mentor, // Link back to mentor
                     mentee: mentee, // Link back to mentee
                     rating: 0, // Not in schema provided
-                    feedback: '' // Not in schema provided
+                    feedback: '', // Not in schema provided
+                    video_link: session.video_link,
+                    notes: session.notes,
+                    created_at: session.created_at,
+                    updated_at: session.updated_at
                 };
             });
 
@@ -122,6 +130,80 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
 
     } catch (err) {
         console.error('Unexpected error fetching mentorships:', err);
+        return [];
+    }
+};
+
+export const fetchMentees = async (): Promise<Mentee[]> => {
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select(`
+                id, 
+                first_name, 
+                last_name, 
+                email, 
+                role, 
+                avatar_url,
+                mentee_profiles (
+                    title, 
+                    company, 
+                    bio, 
+                    pronouns, 
+                    neurodivergence_details, 
+                    mentorship_goals
+                ),
+                availability_blocks (
+                    day_of_week, 
+                    start_time, 
+                    end_time
+                )
+            `)
+            .eq('role', 'mentee');
+
+        if (error) {
+            console.error('Error fetching mentees:', error);
+            return [];
+        }
+
+        if (!data) return [];
+
+        return data.map((user: any) => {
+            const profile = Array.isArray(user.mentee_profiles) ? user.mentee_profiles[0] : user.mentee_profiles || {};
+
+            // Map availability
+            const availability: { [key: string]: string[] } = {};
+            if (user.availability_blocks && Array.isArray(user.availability_blocks)) {
+                user.availability_blocks.forEach((block: any) => {
+                    const day = block.day_of_week.toLowerCase();
+                    const timeRange = `${block.start_time.slice(0, 5)}-${block.end_time.slice(0, 5)}`;
+                    if (!availability[day]) {
+                        availability[day] = [];
+                    }
+                    availability[day].push(timeRange);
+                });
+            }
+
+            return {
+                id: user.id,
+                name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Mentoreada',
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                role: 'mentee',
+                avatarUrl: user.avatar_url || '',
+                interests: [], // Not fetched
+                availability: availability,
+                bio: profile.bio || '',
+                title: profile.title || 'Estudiante',
+                company: profile.company || '',
+                mentorshipGoals: profile.mentorship_goals || [],
+                pronouns: profile.pronouns,
+                neurodivergence: profile.neurodivergence_details
+            };
+        });
+    } catch (err) {
+        console.error('Unexpected error fetching mentees:', err);
         return [];
     }
 };

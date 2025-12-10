@@ -20,6 +20,7 @@ interface AdminDashboardPageProps {
     mentorships: Mentorship[];
     requests: ConnectionRequest[];
     mentors: Mentor[];
+    mentees: Mentee[];
     updateConnectionStatus: (requestId: number, newStatus: 'accepted' | 'rejected') => void;
     updateMentorMaxMentees: (mentorId: number, maxMentees: number) => void;
     supportTickets: SupportTicket[];
@@ -44,7 +45,7 @@ const SectionTitle: React.FC<{ title: string; tooltipText: string; count?: numbe
 );
 
 
-const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, requests, mentors, updateConnectionStatus, updateMentorMaxMentees, supportTickets, updateSupportTicketStatus }) => {
+const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, requests, mentors, mentees, updateConnectionStatus, updateMentorMaxMentees, supportTickets, updateSupportTicketStatus }) => {
 
     const [selectedMentorForDetails, setSelectedMentorForDetails] = useState<Mentor | null>(null);
     const [selectedMenteeForDetails, setSelectedMenteeForDetails] = useState<Mentee | null>(null);
@@ -70,16 +71,23 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
     }, [mentorships, allSessions]);
 
     const allMenteesWithStats = useMemo(() => {
-        const menteeMap = new Map<number, { mentee: Mentee, active: number, completed: number }>();
+        const menteeMap = new Map<number | string, { mentee: Mentee, active: number, completed: number }>();
+
+        // Initialize with all fetched mentees
+        mentees.forEach(mentee => {
+            menteeMap.set(mentee.id, {
+                mentee: mentee,
+                active: 0,
+                completed: 0
+            });
+        });
+
+        // Add stats from mentorships
         mentorships.forEach(m => {
             if (!menteeMap.has(m.mentee.id)) {
-                // Find more complete mentee info from mockData if available, otherwise use from mentorship
-                const menteeDetails = m.mentee; // Simplified for this context
+                // Fallback if mentee not in list (shouldn't happen if fetched correctly)
                 menteeMap.set(m.mentee.id, {
-                    mentee: {
-                        ...menteeDetails,
-                        title: menteeDetails.title || 'Estudiante' // Add default title if missing
-                    },
+                    mentee: m.mentee,
                     active: 0,
                     completed: 0
                 });
@@ -89,7 +97,7 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
             else if (m.status === 'completed') stats.completed++;
         });
         return Array.from(menteeMap.values());
-    }, [mentorships]);
+    }, [mentorships, mentees]);
 
     const pendingRequests = useMemo(() => requests.filter(r => r.status === 'pending'), [requests]);
     const terminationRequests = useMemo(() => mentorships.filter(s => s.status === 'termination_requested'), [mentorships]);
