@@ -139,6 +139,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         );
     };
 
+    const parseLocalDate = (dateStr: string) => {
+        // dateStr viene como "YYYY-MM-DD"
+        const [year, month, day] = dateStr.split('-').map(Number);
+        // month - 1 porque Date usa 0-11
+        return new Date(year, month - 1, day);
+    };
+
     const handleAvailabilitySave = async (newAvailability: Record<string, string[]>) => {
         if (!user) return;
 
@@ -160,7 +167,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
             Object.entries(cleanedAvailability).forEach(([dateKey, times]) => {
                 // dateKey viene como "YYYY-MM-DD", por ejemplo "2025-12-18"
-                const dateObj = new Date(dateKey + 'T00:00:00');
+                const [y, m, d] = dateKey.split('-').map(Number);
+                const dateObj = new Date(y, m - 1, d); // siempre local
                 const weekdayIndex = dateObj.getDay(); // 0 domingo .. 6 sábado
                 const weekdayNames: Array<'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday'> = [
                     'sunday',
@@ -850,14 +858,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 : 'Indica a las mentoras cuándo estás disponible.'}
                         </p>
                         <div className="space-y-3">
-                            {Object.entries(profileData.availability || {}).map(
-                                ([date, times]) => (
+                            {Object.entries(profileData.availability || {})
+                                .sort(([dateA], [dateB]) => dateA.localeCompare(dateB)) // ordenar por fecha ascendente
+                                .map(([date, times]) => (
                                     <div
                                         key={date}
                                         className="bg-secondary p-3 rounded-md flex items-center justify-between"
                                     >
                                         <p className="font-semibold">
-                                            {new Date(date).toLocaleDateString('es-ES', {
+                                            {parseLocalDate(date).toLocaleDateString('es-ES', {
                                                 weekday: 'long',
                                                 month: 'long',
                                                 day: 'numeric',
@@ -869,8 +878,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                             ))}
                                         </div>
                                     </div>
-                                ),
-                            )}
+                                ))}
                         </div>
                         {!isPublicView && (
                             <div className="flex flex-wrap items-center gap-4 mt-4">
