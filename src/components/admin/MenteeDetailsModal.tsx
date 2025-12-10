@@ -41,7 +41,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
-            <div className="bg-card rounded-lg p-6 m-4 max-w-3xl w-full relative transform transition-all flex flex-col h-[90vh]">
+            <div className="bg-card rounded-lg p-6 m-4 max-w-3xl w-full relative transform transition-all max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                     <XIcon className="w-6 h-6" />
                 </button>
@@ -73,7 +73,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                     <DetailStat icon={<ClockIcon />} value={stats.completedSessions} label="Sesiones Completadas" />
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-2">
+                <div className="pt-2">
                     <h3 className="text-xl font-semibold mb-4">Historial de Mentorías</h3>
                     <div className="space-y-3">
                         {menteeMentorships.length > 0 ? (
