@@ -3,6 +3,7 @@ import type { Session, ConnectionRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
 import SessionCard from '../components/dashboard/SessionCard';
 import ConnectionRequestCard from '../components/notifications/ConnectionRequestCard';
+import { Notifications, notificationService } from '@/services/notificationService';
 
 interface NotificationsPageProps {
     sessions: Session[];
@@ -11,17 +12,11 @@ interface NotificationsPageProps {
     updateConnectionStatus: (requestId: number, newStatus: 'accepted' | 'declined') => void;
 }
 
-const NotificationsPage: React.FC<NotificationsPageProps> = ({ sessions, connectionRequests, updateSessionStatus, updateConnectionStatus }) => {
-    const { role } = useAuth();
-
-    const relevantSessionNotifications = sessions.filter(s =>
-        (role === 'mentor' && s.status === 'pending') ||
-        (role === 'mentee' && s.status === 'needs_confirmation')
-    );
-    
-    const relevantConnectionRequests = connectionRequests.filter(cr =>
-        role === 'mentor' && cr.status === 'pending'
-    );
+const NotificationsPage: React.FC<NotificationsPageProps> = async ({ sessions, connectionRequests, updateSessionStatus, updateConnectionStatus }) => {
+    const { role, user } = useAuth();
+    const Notifications: Notifications = await notificationService.fetchNotifications(user.id, role!);
+    const relevantSessionNotifications = Notifications['sessions'];
+    const relevantConnectionRequests = Notifications['connectionRequests'];
 
     const hasNotifications = relevantSessionNotifications.length > 0 || relevantConnectionRequests.length > 0;
 
@@ -35,7 +30,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ sessions, connect
                         <div className="space-y-4">
                             <h2 className="text-xl font-semibold">Solicitudes de Conexión</h2>
                              {relevantConnectionRequests.map(request => (
-                                <ConnectionRequestCard key={request.id} request={request} onStatusChange={updateConnectionStatus} />
+                                <ConnectionRequestCard avatarUrl={request.avatarUrl} key={request.menteeId} request={request} onStatusChange={updateConnectionStatus} />
                             ))}
                         </div>
                     )}
@@ -44,7 +39,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ sessions, connect
                         <div className="space-y-4">
                             <h2 className="text-xl font-semibold">Solicitudes de Sesión</h2>
                             {relevantSessionNotifications.map(session => (
-                                <SessionCard key={session.id} session={session} userRole={role!} onStatusChange={updateSessionStatus} onRequestTermination={() => {}} />
+                                <SessionCard avatarUrl={session.avatarUrl} key={session.id} session={session} userRole={role!} onStatusChange={updateSessionStatus} onRequestTermination={() => {}} />
                             ))}
                         </div>
                     )}
