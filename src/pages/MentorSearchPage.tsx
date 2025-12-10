@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Mentor, Mentee } from '../types';
 import { useAuth } from '../context/AuthContext';
 import MentorCard from '../components/mentors/MentorCard';
 import { useProfileOptions } from '../hooks/useProfileOptions';
+import { fetchActiveMentorshipsForUser } from '../services/mentorshipService';
 
 interface MentorSearchPageProps {
     mentors: Mentor[];
@@ -18,8 +19,11 @@ export interface MatchDetails {
     breakdown: MatchBreakdown[];
 }
 
-// FIX: Refactored the function to be more type-safe and avoid assignment errors.
-// It now constructs the breakdown array directly with the correct types.
+// FIX: Refactored functionality to correctly match availability.
+// Now handles both specific dates and recurring days, and implements the requested scoring logic:
+// >= 2 matching blocks: Exact
+// 1 matching block: Partial
+// 0 matching blocks: No Match
 const calculateMatch = (mentor: Mentor, mentee: Mentee): MatchDetails => {
     let score = 0;
     const breakdown: MatchBreakdown[] = [];
@@ -49,31 +53,59 @@ const calculateMatch = (mentor: Mentor, mentee: Mentee): MatchDetails => {
     }
 
     // 3. Availability (25%)
-    // Compare availability schedules between mentee and mentor
-    // Count how many time slots match on the same dates
     const menteeAvailability = mentee.availability || {};
     const mentorAvailability = mentor.availability || {};
-    
+
     let matchingTimeSlots = 0;
-    
-    // Iterate through all dates in mentee's availability
-    Object.keys(menteeAvailability).forEach(date => {
-        // Check if mentor also has availability on this date
-        if (mentorAvailability[date]) {
-            const menteeTimes = menteeAvailability[date];
-            const mentorTimes = mentorAvailability[date];
-            
-            // Count how many time slots match on this date
-            const matchesOnDate = menteeTimes.filter(time => mentorTimes.includes(time)).length;
-            matchingTimeSlots += matchesOnDate;
+
+    // Helper to get day of week from a date string "YYYY-MM-DD"
+    const getDayName = (dateStr: string) => {
+        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        // Append T00:00:00 to avoid timezone shifts when parsing YYYY-MM-DD
+        return days[new Date(dateStr + 'T00:00:00').getDay()];
+    };
+
+    // Iterate through all availability keys from mentee (could be "monday", "tuesday" or "2024-05-20")
+    Object.keys(menteeAvailability).forEach(menteeKey => {
+        const menteeTimes = menteeAvailability[menteeKey];
+
+        // We need to check if mentor has availability for this key.
+        // Cases:
+        // A) Key is a day name (e.g. "monday") -> Check mentorAvailability["monday"]
+        // B) Key is a specific date (e.g. "2024-05-20") -> Check mentorAvailability["2024-05-20"] matches OR mentorAvailability["monday"] matches recurringly
+
+        // Check exact key match first
+        let mentorTimesRaw = mentorAvailability[menteeKey] || [];
+
+        // If no exact match and key looks like a date, check the corresponding day name in mentor's recurring availability
+        const isDate = /^\d{4}-\d{2}-\d{2}$/.test(menteeKey);
+        if (mentorTimesRaw.length === 0 && isDate) {
+            const dayName = getDayName(menteeKey);
+            if (mentorAvailability[dayName]) {
+                mentorTimesRaw = mentorAvailability[dayName];
+            }
+        }
+
+        // FIX: Mentor availability is stored as ranges "HH:MM-HH:MM" (e.g. "10:30-11:00")
+        // Mentee availability is stored as start times "HH:MM" (e.g. "10:30")
+        // We match if the mentee's start time equals the mentor's range start time.
+        const mentorStartTimes = mentorTimesRaw.map(t => t.split('-')[0]);
+
+        // Count overlapping slots
+        const matchesInBlock = menteeTimes.filter(time => mentorStartTimes.includes(time)).length;
+
+        if (matchesInBlock > 0) {
+            // Count each matching block as 1 "coincidence" (or could count individual slots)
+            matchingTimeSlots += matchesInBlock;
         }
     });
-    
-    // Determine status based on number of matching time slots
+
+    // Determine status based on user rules
     if (matchingTimeSlots >= 2) {
-        score += 25;
+        score += 25; // Full score for Exacta
         breakdown.push({ criterion: 'Disponibilidad', status: 'Exacta' });
     } else if (matchingTimeSlots === 1) {
+        score += 15; // Partial score
         breakdown.push({ criterion: 'Disponibilidad', status: 'Parcial' });
     } else {
         breakdown.push({ criterion: 'Disponibilidad', status: 'No Coincide' });
@@ -92,6 +124,20 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
     const { interests: interestOptions, loading } = useProfileOptions();
     const currentUser = user as Mentee; // Assuming user is always a Mentee on this page
 
+    // NEW: State for active mentorships
+    const [activeMentorIds, setActiveMentorIds] = useState<Set<string>>(new Set());
+
+    // NEW: Fetch active mentorships on mount/user change
+    useEffect(() => {
+        const loadActiveMentorships = async () => {
+            if (currentUser?.id) {
+                const ids = await fetchActiveMentorshipsForUser(currentUser.id.toString());
+                setActiveMentorIds(new Set(ids));
+            }
+        };
+        loadActiveMentorships();
+    }, [currentUser?.id]);
+
     const mentorsWithAffinity = useMemo(() => {
         if (!currentUser) {
             console.log('MentorSearchPage: No current user found.');
@@ -102,6 +148,11 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
         console.log('MentorSearchPage: Mentors to process:', mentors);
 
         const filtered = mentors.filter(mentor => {
+            // NEW: Filter out active mentors
+            if (activeMentorIds.has(mentor.id.toString())) {
+                return false;
+            }
+
             const searchLower = searchTerm.toLowerCase();
             const mentorInterests = Array.isArray(mentor.interests) ? mentor.interests : [];
 
@@ -120,13 +171,13 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
                 const mentorInterests = Array.isArray(mentor.interests) ? mentor.interests : [];
                 const menteeInterests = Array.isArray(currentUser.interests) ? currentUser.interests : [];
                 const matchingInterests = mentorInterests.filter(i => menteeInterests.includes(i));
-                
+
                 // Create a modified mentor object with only matching interests for display
                 const mentorWithMatchingInterests = {
                     ...mentor,
                     interests: matchingInterests
                 };
-                
+
                 return {
                     mentor: mentorWithMatchingInterests,
                     matchDetails: calculateMatch(mentor, currentUser)
@@ -139,10 +190,10 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
                 };
             }
         })
-        .filter(({ matchDetails }) => matchDetails.affinityScore > 0)
-        .sort((a, b) => b.matchDetails.affinityScore - a.matchDetails.affinityScore);
+            .filter(({ matchDetails }) => matchDetails.affinityScore > 0)
+            .sort((a, b) => b.matchDetails.affinityScore - a.matchDetails.affinityScore);
 
-    }, [mentors, searchTerm, selectedCategory, currentUser]);
+    }, [mentors, searchTerm, selectedCategory, currentUser, activeMentorIds]);
 
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
