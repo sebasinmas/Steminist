@@ -139,17 +139,118 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
         );
     };
 
-    const handleAvailabilitySave = (newAvailability: Record<string, string[]>) => {
+    const parseLocalDate = (dateStr: string) => {
+        // dateStr viene como "YYYY-MM-DD"
+        const [year, month, day] = dateStr.split('-').map(Number);
+        // month - 1 porque Date usa 0-11
+        return new Date(year, month - 1, day);
+    };
+
+    const handleAvailabilitySave = async (newAvailability: Record<string, string[]>) => {
+        if (!user) return;
+
+        const userId = user.id;
+
+        // 1) Limpiar disponibilidad (quitar días vacíos y ordenar horas)
         const cleanedAvailability: Record<string, string[]> = {};
-        Object.entries(newAvailability).forEach(([date, times]) => {
-            if (times.length > 0) {
-                cleanedAvailability[date] = times.sort();
+        Object.entries(newAvailability).forEach(([dateKey, times]) => {
+            const sorted = (times || []).filter(Boolean).sort();
+            if (sorted.length > 0) {
+                cleanedAvailability[dateKey] = sorted;
             }
         });
-        setProfileData(prev =>
-            prev ? { ...prev, availability: cleanedAvailability } : null,
-        );
-        setIsCalendarOpen(false);
+
+        console.log('[ProfilePage] handleAvailabilitySave → cleanedAvailability', cleanedAvailability);
+
+        try {
+            const availabilityRows: any[] = [];
+
+            Object.entries(cleanedAvailability).forEach(([dateKey, times]) => {
+                // dateKey viene como "YYYY-MM-DD", por ejemplo "2025-12-18"
+                const [y, m, d] = dateKey.split('-').map(Number);
+                const dateObj = new Date(y, m - 1, d); // siempre local
+                const weekdayIndex = dateObj.getDay(); // 0 domingo .. 6 sábado
+                const weekdayNames: Array<'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday'> = [
+                    'sunday',
+                    'monday',
+                    'tuesday',
+                    'wednesday',
+                    'thursday',
+                    'friday',
+                    'saturday',
+                ];
+                const dayOfWeek = weekdayNames[weekdayIndex];
+
+                (times as string[]).forEach(slot => {
+                    // slot viene como "HH:MM" (por ejemplo "12:00", "12:30")
+                    const [hourStr, minuteStr] = slot.split(':');
+                    if (!hourStr || !minuteStr) return;
+
+                    const hour = parseInt(hourStr, 10);
+                    const minute = parseInt(minuteStr, 10);
+
+                    // Calculamos hora de fin sumando 30 minutos al slot
+                    const d = new Date(2000, 0, 1, hour, minute);
+                    d.setMinutes(d.getMinutes() + 30); // ajusta si tu slot es de otra duración
+
+                    const endHour = d.getHours().toString().padStart(2, '0');
+                    const endMinute = d.getMinutes().toString().padStart(2, '0');
+                    const end = `${endHour}:${endMinute}`;
+
+                    availabilityRows.push({
+                        user_id: userId,
+                        day_of_week: dayOfWeek,      // enum: sunday, monday, ...
+                        start_time: slot + ':00',    // "12:00" → "12:00:00"
+                        end_time: end + ':00',       // "12:30" → "12:30:00"
+                        is_recurring: false,         // porque estamos usando specific_date
+                        is_booked: false,
+                        notes: null,
+                        timezone: null,
+                        specific_date: dateKey,      // "2025-12-18"
+                    });
+                });
+            });
+
+            console.log('[ProfilePage] handleAvailabilitySave → rows to upsert', availabilityRows);
+
+            // 2) Borrar bloques anteriores de este usuario
+            const { error: delErr } = await supabase
+                .from('availability_blocks')
+                .delete()
+                .eq('user_id', userId);
+
+            if (delErr) {
+                console.error('[ProfilePage] Error deleting old availability_blocks', delErr);
+                addToast('No se pudo actualizar la disponibilidad.', 'error');
+                return;
+            }
+
+            // 3) Insertar los nuevos bloques (si hay)
+            if (availabilityRows.length > 0) {
+                const { error: insErr } = await supabase
+                    .from('availability_blocks')
+                    .insert(availabilityRows);
+
+                if (insErr) {
+                    console.error('[ProfilePage] Error inserting availability_blocks', insErr);
+                    addToast('No se pudo actualizar la disponibilidad.', 'error');
+                    return;
+                }
+            }
+
+            // 4) Actualizar el estado local para que la UI refleje lo guardado
+            setProfileData(prev =>
+                prev ? { ...prev, availability: cleanedAvailability } : null,
+            );
+
+            addToast('Disponibilidad actualizada con éxito.', 'success');
+            console.log('[ProfilePage] availability_blocks updated successfully');
+        } catch (err) {
+            console.error('[ProfilePage] Error in handleAvailabilitySave', err);
+            addToast('Ocurrió un error al guardar la disponibilidad.', 'error');
+        } finally {
+            setIsCalendarOpen(false);
+        }
     };
 
     const handleSave = async () => {
@@ -355,8 +456,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                     key={option}
                                     onClick={() => handleToggleOption(option)}
                                     className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${(tags || []).includes(option)
-                                            ? 'bg-primary text-primary-foreground border-primary'
-                                            : 'bg-background border-border hover:bg-accent'
+                                        ? 'bg-primary text-primary-foreground border-primary'
+                                        : 'bg-background border-border hover:bg-accent'
                                         } cursor-pointer`}
                                 >
                                     {option}
@@ -757,14 +858,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                 : 'Indica a las mentoras cuándo estás disponible.'}
                         </p>
                         <div className="space-y-3">
-                            {Object.entries(profileData.availability || {}).map(
-                                ([date, times]) => (
+                            {Object.entries(profileData.availability || {})
+                                .sort(([dateA], [dateB]) => dateA.localeCompare(dateB)) // ordenar por fecha ascendente
+                                .map(([date, times]) => (
                                     <div
                                         key={date}
                                         className="bg-secondary p-3 rounded-md flex items-center justify-between"
                                     >
                                         <p className="font-semibold">
-                                            {new Date(date).toLocaleDateString('es-ES', {
+                                            {parseLocalDate(date).toLocaleDateString('es-ES', {
                                                 weekday: 'long',
                                                 month: 'long',
                                                 day: 'numeric',
@@ -776,8 +878,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                                             ))}
                                         </div>
                                     </div>
-                                ),
-                            )}
+                                ))}
                         </div>
                         {!isPublicView && (
                             <div className="flex flex-wrap items-center gap-4 mt-4">

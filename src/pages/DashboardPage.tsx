@@ -23,7 +23,7 @@ interface DashboardPageProps {
     addAttachmentToSession: (mentorshipId: number, sessionId: number, attachment: Attachment) => void;
     addSurveyToSession: (mentorshipId: number, sessionId: number, survey: MentorSurvey) => void;
     requestMentorshipTermination: (mentorshipId: number, reasons: string[], details: string) => void;
-    submitSupportTicket: (subject: string, message: string) => void;
+    submitSupportTicket: (subject: string, message: string) => Promise<void>;
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = (props) => {
@@ -103,9 +103,14 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
         setTerminatingMentorship(null);
     };
 
-    const handleSubmitSupportTicket = (subject: string, message: string) => {
-        submitSupportTicket(subject, message);
-        addToast('Tu consulta ha sido enviada. Te responderemos pronto.', 'success');
+    const handleSubmitSupportTicket = async (subject: string, message: string) => {
+        try {
+            await submitSupportTicket(subject, message);
+            addToast('Tu consulta ha sido enviada. Te responderemos pronto.', 'success');
+        } catch (error) {
+            console.error('Error al enviar consulta:', error);
+            addToast('Error al enviar la consulta. Por favor, intenta de nuevo.', 'error');
+        }
     };
 
     const MatchImprovementCard = () => (

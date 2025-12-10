@@ -116,8 +116,19 @@ const MentorSearchPage: React.FC<MentorSearchPageProps> = ({ mentors }) => {
 
         return filtered.map(mentor => {
             try {
+                // Calculate matching interests between mentor and mentee
+                const mentorInterests = Array.isArray(mentor.interests) ? mentor.interests : [];
+                const menteeInterests = Array.isArray(currentUser.interests) ? currentUser.interests : [];
+                const matchingInterests = mentorInterests.filter(i => menteeInterests.includes(i));
+                
+                // Create a modified mentor object with only matching interests for display
+                const mentorWithMatchingInterests = {
+                    ...mentor,
+                    interests: matchingInterests
+                };
+                
                 return {
-                    mentor,
+                    mentor: mentorWithMatchingInterests,
                     matchDetails: calculateMatch(mentor, currentUser)
                 };
             } catch (err) {
