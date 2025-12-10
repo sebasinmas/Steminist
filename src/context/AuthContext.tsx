@@ -67,17 +67,19 @@ async function fetchMenteeProfile(userId: string) {
 async function fetchAvailability(userId: string) {
     const { data, error } = await supabase
         .from('availability_blocks')
-        .select('specific_date, start_time')
+        .select('specific_date, day_of_week, start_time')
         .eq('user_id', userId)
         .eq('is_booked', false); // opcional: solo slots no reservados
 
     if (error) throw error;
 
-    // availability: { "YYYY-MM-DD": ["HH:MM", "HH:MM", ...] }
-    const availability: { [date: string]: string[] } = {};
+    // availability: { "YYYY-MM-DD": ["HH:MM", ...], "monday": ["HH:MM", ...] }
+    const availability: { [key: string]: string[] } = {};
 
     (data || []).forEach((block: any) => {
-        const dateKey: string = block.specific_date; // "2025-12-18"
+        // Use specific_date if present, otherwise use day_of_week (recurring)
+        const dateKey: string = block.specific_date || block.day_of_week?.toLowerCase();
+
         if (!dateKey) return;
 
         // start_time viene como "HH:MM:SS" -> "HH:MM"
@@ -91,9 +93,9 @@ async function fetchAvailability(userId: string) {
         }
     });
 
-    // Ordenar las horas en cada fecha
-    Object.keys(availability).forEach(dateKey => {
-        availability[dateKey].sort();
+    // Ordenar las horas en cada fecha/día
+    Object.keys(availability).forEach(key => {
+        availability[key].sort();
     });
 
     return availability;
