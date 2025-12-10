@@ -23,6 +23,7 @@ import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { fetchMentors } from './services/mentorService';
+import { createSupportTicket } from './services/supportService';
 
 const App: React.FC = () => {
     return (
@@ -166,10 +167,30 @@ const AppContent: React.FC = () => {
         setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, status: 'termination_requested', terminationReason: reasonText } : m));
     };
 
-    const submitSupportTicket = (subject: string, message: string) => {
+    const submitSupportTicket = async (subject: string, message: string) => {
         if (!user) return;
-        const newTicket: SupportTicket = { id: Date.now(), user: user as Mentor | Mentee, subject, message, status: 'open', timestamp: new Date().toISOString() };
-        setSupportTickets(prev => [newTicket, ...prev]);
+        
+        try {
+            // Convert user id to string (should be UUID)
+            const userId = String(user.id);
+            
+            // Save to database
+            await createSupportTicket(userId, subject, message);
+            
+            // Also update local state for admin dashboard
+            const newTicket: SupportTicket = { 
+                id: Date.now(), 
+                user: user as Mentor | Mentee, 
+                subject, 
+                message, 
+                status: 'open', 
+                timestamp: new Date().toISOString() 
+            };
+            setSupportTickets(prev => [newTicket, ...prev]);
+        } catch (error) {
+            console.error('Error submitting support ticket:', error);
+            throw error; // Re-throw to allow caller to handle error
+        }
     };
 
     const updateSupportTicketStatus = (ticketId: number, status: 'resolved') => {
