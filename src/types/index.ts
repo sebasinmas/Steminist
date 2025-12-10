@@ -1,4 +1,4 @@
-import { Database } from "./Database";
+import { Database } from "@/lib/database.types";
 
 // FIX: Replaced circular import with direct type definitions to resolve import errors.
 export type Page =
@@ -30,7 +30,7 @@ export interface BaseUser {
   last_name?: string;  // Nuevo campo
   email: string;
   avatarUrl: string;
-  interests: Database["models"]["Enums"]["interest_enum"][]; // Ajustado para coincidir con la base de datos
+  interests: Database["public"]["Enums"]["interest_enum"][]; // Ajustado para coincidir con la base de datos
   availability?: Record<string, string[]>;
   title?: string;
   company?: string;
@@ -45,7 +45,7 @@ export interface Mentor extends BaseUser {
   rating: number;
   reviews: number;
   longBio?: string;
-  mentorshipGoals: Database["models"]["Tables"]["mentor_profiles"]["Row"]["mentorship_goals"]; // Ajustado para coincidir con la base de datos
+  mentorshipGoals: Database["public"]["Tables"]["mentor_profiles"]["Row"]["mentorship_goals"]; // Ajustado para coincidir con la base de datos
   maxMentees: number;
   links?: Link[];
 }
@@ -53,7 +53,7 @@ export interface Mentor extends BaseUser {
 export interface Mentee extends BaseUser {
   bio: string;
   role: 'mentee';
-  mentorshipGoals: Database["models"]["Tables"]["mentee_profiles"]["Row"]["mentorship_goals"]; // Ajustado para coincidir con la base de datos
+  mentorshipGoals: Database["public"]["Tables"]["mentee_profiles"]["Row"]["mentorship_goals"]; // Ajustado para coincidir con la base de datos
   pronouns?: string;
   neurodivergence?: string;
 }
