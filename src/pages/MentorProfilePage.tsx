@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { connectionService } from '../services/connectionService';
 import { useEffect } from 'react';
 import { Avatar } from '../components/common/Avatar';
+import { getDateObject } from '../utils/dateUtils';
 
 interface MentorProfilePageProps {
     mentor: Mentor;
@@ -117,12 +118,23 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
                         <h2 className="text-2xl font-bold mb-4 border-b border-border pb-2">Disponibilidad</h2>
                         <p className="text-muted-foreground mb-4">La mentora está disponible en las siguientes fechas. Los horarios están en tu zona horaria local.</p>
                         <div className="flex flex-wrap gap-4">
-                            {Object.keys(mentor.availability).map(date => (
-                                <div key={date} className="bg-secondary text-secondary-foreground rounded-lg p-3 text-center">
-                                    <p className="font-bold">{new Date(date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}</p>
-                                    <p className="text-sm">{new Date(date).toLocaleDateString('es-ES', { weekday: 'long' })}</p>
-                                </div>
-                            ))}
+                            {(() => {
+                                const sortedDates = Object.keys(mentor.availability).sort((a, b) => {
+                                    const dateA = getDateObject(a);
+                                    const dateB = getDateObject(b);
+                                    return dateA.getTime() - dateB.getTime();
+                                });
+
+                                return sortedDates.map(dateStr => {
+                                    const dateObj = getDateObject(dateStr);
+                                    return (
+                                        <div key={dateStr} className="bg-secondary text-secondary-foreground rounded-lg p-3 text-center">
+                                            <p className="font-bold capitalize">{dateObj.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}</p>
+                                            <p className="text-sm capitalize">{dateObj.toLocaleDateString('es-ES', { weekday: 'long' })}</p>
+                                        </div>
+                                    );
+                                });
+                            })()}
                         </div>
                     </div>
                 </div>
