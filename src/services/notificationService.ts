@@ -90,18 +90,52 @@ export const getPendingSessionsForUser = async (userId: string | number): Promis
     if (!data) return [];
 
     // Mapeo de datos (adapter pattern)
-    const sessions: Session[] = data.map((session: any) => ({
-        id: session.id,
-        sessionNumber: session.session_number,
-        date: session.scheduled_at,
-        time: new Date(session.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        duration: session.duration_minutes,
-        status: session.status,
-        topic: session.topic,
-        menteeGoals: session.mentee_goals,
-        mentor: session.mentorship?.mentor,
-        mentee: session.mentorship?.mentee
-    }));
+    const sessions: Session[] = data.map((session: any) => {
+        const raw = session.scheduled_at as string | null;
+        const rawMentor = session.mentorship?.mentor;
+        const rawMentee = session.mentorship?.mentee;
+
+        let dateStr = '';
+        let timeStr = '00:00';
+
+        if (raw) {
+            const d = new Date(raw);
+            // Usamos UTC para respetar exactamente lo que viene de la BD
+            const year = d.getUTCFullYear();
+            const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+            const day = d.getUTCDate().toString().padStart(2, '0');
+            const hours = d.getUTCHours().toString().padStart(2, '0');
+            const minutes = d.getUTCMinutes().toString().padStart(2, '0');
+
+            dateStr = `${year}-${month}-${day}`; // 2025-12-19
+            timeStr = `${hours}:${minutes}`;     // 12:00
+        }
+
+        return {
+            id: session.id,
+            sessionNumber: session.session_number,
+            date: dateStr,
+            time: timeStr,
+            duration: session.duration_minutes,
+            status: session.status,
+            topic: session.topic,
+            menteeGoals: session.mentee_goals,
+            mentor: rawMentor
+                ? {
+                    ...rawMentor,
+                    name: `${rawMentor.first_name || ''} ${rawMentor.last_name || ''}`.trim(),
+                    avatarUrl: rawMentor.avatar_url || '',
+                }
+                : undefined,
+            mentee: rawMentee
+                ? {
+                    ...rawMentee,
+                    name: `${rawMentee.first_name || ''} ${rawMentee.last_name || ''}`.trim(),
+                    avatarUrl: rawMentee.avatar_url || '',
+                }
+                : undefined,
+        } as Session;
+    });
     console.log("Si lees esto, se obtuvieron sesiones:", sessions);
     return sessions;
 };

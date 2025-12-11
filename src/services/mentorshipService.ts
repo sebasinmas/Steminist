@@ -95,18 +95,23 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
 
             // Map Sessions
             const sessions: Session[] = (item.sessions || []).map((session: any, index: number) => {
-                const scheduledDate = session.scheduled_at ? new Date(session.scheduled_at) : new Date();
-                const dateHasTime = session.scheduled_at && session.scheduled_at.includes('T');
+                const scheduledAtRaw = session.scheduled_at as string | null;
 
-                // Format date as YYYY-MM-DD
-                const dateStr = session.scheduled_at ? session.scheduled_at.split('T')[0] : '';
-
-                // Format time as HH:MM
+                let dateStr = '';
                 let timeStr = '00:00';
-                if (dateHasTime) {
-                    const hours = scheduledDate.getHours().toString().padStart(2, '0');
-                    const minutes = scheduledDate.getMinutes().toString().padStart(2, '0');
-                    timeStr = `${hours}:${minutes}`;
+
+                if (scheduledAtRaw) {
+                    const scheduledDate = new Date(scheduledAtRaw);
+
+                    // Usamos UTC para respetar exactamente lo que viene de la BD
+                    const year = scheduledDate.getUTCFullYear();
+                    const month = (scheduledDate.getUTCMonth() + 1).toString().padStart(2, '0');
+                    const day = scheduledDate.getUTCDate().toString().padStart(2, '0');
+                    const hours = scheduledDate.getUTCHours().toString().padStart(2, '0');
+                    const minutes = scheduledDate.getUTCMinutes().toString().padStart(2, '0');
+
+                    dateStr = `${year}-${month}-${day}`;   // 2025-12-19
+                    timeStr = `${hours}:${minutes}`;       // 12:00
                 }
 
                 // Map Session Feedback
