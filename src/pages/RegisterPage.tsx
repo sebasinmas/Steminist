@@ -220,10 +220,10 @@ const RegisterPage: React.FC = () => {
                                                 className="w-full p-2 border border-border rounded-md bg-input text-foreground appearance-none pr-8"
                                             >
                                                 <option value="">Selecciona tu nivel...</option>
-                                                <option value="entry">Entry (Junior / Inicial)</option>
-                                                <option value="mid">Mid (Semi-Senior / Intermedio)</option>
-                                                <option value="senior">Senior (Avanzado)</option>
-                                                <option value="lead">Lead (Líder / Principal)</option>
+                                                <option value="Entry">Entry (Junior / Inicial)</option>
+                                                <option value="Mid">Mid (Semi-Senior / Intermedio)</option>
+                                                <option value="Senior">Senior (Avanzado)</option>
+                                                <option value="Lead">Lead (Líder / Principal)</option>
                                             </select>
                                             <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                                                 <svg className="w-4 h-4 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
