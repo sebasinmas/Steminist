@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Mentorship, Mentor, Mentee, Session, SessionStatus, MentorshipStatus } from '../types';
+import { Mentorship, Mentor, Mentee, Session, SessionStatus, MentorshipStatus, MentorSurvey } from '../types';
 
 export const fetchMentorships = async (): Promise<Mentorship[]> => {
     try {
@@ -246,6 +246,53 @@ export const updateSessionStatus = async (sessionId: number, newStatus: SessionS
         return true;
     } catch (err) {
         console.error('Unexpected error updating session status:', err);
+        return false;
+    }
+};
+
+const mapQualityToScore = (quality: string): number => {
+    switch (quality) {
+        case 'excellent': return 4;
+        case 'good': return 3;
+        case 'average': return 2;
+        case 'poor': return 1;
+        default: return 0;
+    }
+};
+
+export const completeSessionWithSurvey = async (
+    sessionId: number,
+    mentorId: string | number,
+    survey: MentorSurvey
+): Promise<boolean> => {
+    try {
+        // 1. Actualizar el estado de la sesión a 'completed'
+        const { error: sessionError } = await supabase
+            .from('sessions')
+            .update({ status: 'completed' })
+            .eq('id', sessionId);
+
+        if (sessionError) throw sessionError;
+
+        // 2. Insertar la encuesta privada
+        // Nota: Mapeamos el campo 'outcome' (texto del modal) al campo 'notes' de la BD
+        // y usamos valores numéricos para preparation y engagement.
+        const { error: surveyError } = await supabase
+            .from('private_session_surveys')
+            .insert([{
+                session_id: sessionId,
+                mentor_id: mentorId,
+                preparation: mapQualityToScore(survey.preparation),
+                engagement: mapQualityToScore(survey.engagement),
+                outcome: 0, // Valor por defecto si no se usa numérico
+                notes: survey.outcome // Guardamos el texto del resultado aquí
+            }]);
+
+        if (surveyError) throw surveyError;
+
+        return true;
+    } catch (err) {
+        console.error('Error completing session:', err);
         return false;
     }
 };
