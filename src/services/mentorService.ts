@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { Mentor, Mentorship } from '../types';
 
+
 export const fetchMentors = async (): Promise<Mentor[]> => {
     try {
         const { data, error } = await supabase
@@ -177,4 +178,115 @@ export const updateMentorMaxMentees = async (mentorId: string, maxMentees: numbe
         console.error('Unexpected error updating max mentees:', err);
         return false;
     }
+};
+
+
+const addDays = (date: Date, days: number) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+};
+
+// Mapeo de índices de JS (0=Domingo) a los valores de tu base de datos
+const getDayOfWeekString = (dayIndex: number): string => {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[dayIndex];
+};
+
+// Función auxiliar para obtener fecha local en formato YYYY-MM-DD
+// Esto evita el error de zona horaria que desplazaba los días
+const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+export const getMentorAvailability = async (mentorId: number | string): Promise<Record<string, string[]>> => {
+    const startDate = new Date();
+    const endDate = addDays(startDate, 30); 
+
+    // 1. Obtener los bloques de disponibilidad definidos por la mentora
+    const { data: blocks, error: blocksError } = await supabase
+        .from('availability_blocks')
+        .select('*')
+        .eq('user_id', mentorId)
+        .eq('is_booked', false);
+
+    if (blocksError) {
+        console.error('Error fetching availability blocks:', blocksError);
+        return {};
+    }
+
+    // 2. Obtener las sesiones YA agendadas para filtrar
+    const { data: existingSessions, error: sessionsError } = await supabase
+        .from('sessions')
+        .select(`
+            scheduled_at, 
+            duration_minutes,
+            mentorship:mentorships!inner(mentor_id)
+        `)
+        .eq('mentorship.mentor_id', mentorId)
+        .neq('status', 'cancelled')
+        // .neq('status', 'rejected') // ELIMINADO: 'rejected' no existe en el enum de sesiones
+        .gte('scheduled_at', startDate.toISOString());
+
+    if (sessionsError) {
+        console.error('Error fetching existing sessions:', sessionsError);
+    }
+
+    const availabilityMap: Record<string, string[]> = {};
+    const bookedMap: Record<string, string[]> = {};
+
+    // 3. Mapear sesiones ocupadas
+    existingSessions?.forEach((session: any) => {
+        // Convertir la fecha UTC de la BD a fecha LOCAL del navegador
+        const dateObj = new Date(session.scheduled_at);
+        const dateKey = getLocalDateString(dateObj); // <--- CAMBIO CLAVE
+        
+        const timeKey = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false }).slice(0, 5);
+        
+        if (!bookedMap[dateKey]) bookedMap[dateKey] = [];
+        bookedMap[dateKey].push(timeKey);
+    });
+
+    // 4. Recorrer los próximos 30 días
+    for (let d = 0; d < 30; d++) {
+        const currentDate = addDays(startDate, d);
+        const dateKey = getLocalDateString(currentDate); 
+        const dayOfWeek = getDayOfWeekString(currentDate.getDay());
+        
+        let daySlots: string[] = [];
+
+        blocks?.forEach(block => {
+            let isMatch = false;
+
+            // Caso A: Fecha específica
+            if (block.specific_date === dateKey) {
+                isMatch = true;
+            }
+            // Caso B: Recurrente (solo si no es fecha específica)
+            else if (block.is_recurring && block.day_of_week?.toLowerCase() === dayOfWeek && !block.specific_date) {
+                isMatch = true;
+            }
+
+            if (isMatch) {
+                // block.start_time viene como "14:00:00" -> cortamos a "14:00"
+                const startTime = block.start_time.slice(0, 5); 
+                
+                // Verificar si ya está ocupado
+                const isBooked = bookedMap[dateKey]?.includes(startTime);
+
+                if (!isBooked) {
+                    daySlots.push(startTime);
+                }
+            }
+        });
+
+        if (daySlots.length > 0) {
+            availabilityMap[dateKey] = [...new Set(daySlots)].sort();
+        }
+    }
+
+    return availabilityMap;
 };
