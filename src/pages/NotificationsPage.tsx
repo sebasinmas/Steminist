@@ -20,7 +20,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ sessions, connect
     );
     
     const relevantConnectionRequests = connectionRequests.filter(cr =>
-        role === 'mentor' && cr.status === 'pending'
+        role === 'mentor' && cr.status === 'pending_mentor'
     );
 
     const hasNotifications = relevantSessionNotifications.length > 0 || relevantConnectionRequests.length > 0;
