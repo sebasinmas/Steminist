@@ -136,15 +136,15 @@ const AppContent: React.FC = () => {
         const calculateNotifications = () => {
             if (!isLoggedIn) return;
             const sessionNotifications = pendingSessions.filter(s =>
-                (s.status === 'pending' && role === 'mentor') ||
+                (s.status === 'pending_mentor' && role === 'mentor') ||
                 (s.status === 'needs_confirmation' && role === 'mentee')
             ).length;
-            const connectionNotifications = connectionRequests.filter(cr => cr.status === 'pending' && role === 'mentor').length;
+            const connectionNotifications = connectionRequests.filter(cr => cr.status === 'pending_mentor' && role === 'mentor').length;
             const supportTicketNotifications = role === 'admin' ? supportTickets.filter(t => t.status === 'open').length : 0;
             setNotificationCount(sessionNotifications + connectionNotifications + supportTicketNotifications);
         };
         calculateNotifications();
-    }, [pendingSessions, connectionRequests, role, supportTickets, isLoggedIn]);
+    }, [pendingSessions, connectionRequests, role, supportTickets, isLoggedIn, setPendingSessions]);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') as Theme | null;
