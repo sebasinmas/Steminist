@@ -1,80 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircleIcon, XCircleIcon, XIcon, InformationCircleIcon } from './Icons';
-
-type ToastType = 'success' | 'error' | 'info';
+import React, { useEffect } from 'react';
+import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, XIcon } from './Icons';
 
 interface ToastProps {
-  message: string;
-  type: ToastType;
-  onDismiss: () => void;
+    message: string;
+    type: 'success' | 'error' | 'info';
+    onDismiss: () => void;
+    duration?: number;
 }
 
-const Toast: React.FC<ToastProps> = ({ message, type, onDismiss }) => {
-    const [isVisible, setIsVisible] = useState(false);
-
+const Toast: React.FC<ToastProps> = ({ message, type, onDismiss, duration = 3000 }) => {
     useEffect(() => {
-        // Animate in on mount
-        const enterTimer = setTimeout(() => setIsVisible(true), 10);
+        const timer = setTimeout(() => {
+            onDismiss();
+        }, duration);
 
-        // Set timer for auto-dismissal, which will trigger the exit animation
-        const dismissTimer = setTimeout(() => {
-            handleDismiss();
-        }, 5000);
+        return () => clearTimeout(timer);
+    }, [duration, onDismiss]);
 
-        return () => {
-            clearTimeout(enterTimer);
-            clearTimeout(dismissTimer);
-        };
-    }, []);
-
-    const handleDismiss = () => {
-        setIsVisible(false);
-        // Wait for animation to finish before calling parent onDismiss to remove from DOM
-        setTimeout(onDismiss, 300);
+    const bgColors = {
+        success: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-900',
+        error: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-900',
+        info: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-900',
     };
 
-    const typeStyles = {
-        success: {
-            icon: <CheckCircleIcon className="w-6 h-6 text-green-500" />,
-            bar: 'bg-green-500',
-        },
-        error: {
-            icon: <XCircleIcon className="w-6 h-6 text-red-500" />,
-            bar: 'bg-red-500',
-        },
-        info: {
-            icon: <InformationCircleIcon className="w-6 h-6 text-blue-500" />,
-            bar: 'bg-blue-500',
-        },
+    const textColors = {
+        success: 'text-green-800 dark:text-green-300',
+        error: 'text-red-800 dark:text-red-300',
+        info: 'text-blue-800 dark:text-blue-300',
     };
 
-    const { icon, bar } = typeStyles[type];
+    const iconColors = {
+        success: 'text-green-500',
+        error: 'text-red-500',
+        info: 'text-blue-500',
+    };
+
+    const Icon = type === 'success' ? CheckCircleIcon : type === 'error' ? XCircleIcon : InformationCircleIcon;
 
     return (
-        <div 
-            className={`
-                flex items-start w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden transition-all duration-300 ease-in-out
-                ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
-            `}
-            role="alert"
-            aria-live="assertive"
-        >
-            <div className={`w-1.5 h-full self-stretch ${bar}`}></div>
-            <div className="flex items-center p-4">
-                <div className="flex-shrink-0">{icon}</div>
-                <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-foreground">{message}</p>
-                </div>
-            </div>
-            <div className="ml-auto pl-3 py-2 pr-3">
-                <button 
-                    onClick={handleDismiss} 
-                    className="-mx-1.5 -my-1.5 inline-flex rounded-md p-1.5 text-muted-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
-                    aria-label="Dismiss"
-                >
-                    <XIcon className="h-5 w-5" />
-                </button>
-            </div>
+        <div className={`flex items-start p-4 mb-4 rounded-lg border shadow-sm ${bgColors[type]} transition-all animate-in slide-in-from-right-5 fade-in duration-300`}>
+            <Icon className={`w-5 h-5 mt-0.5 mr-3 flex-shrink-0 ${iconColors[type]}`} />
+            <div className={`flex-1 text-sm font-medium ${textColors[type]}`}>{message}</div>
+            <button onClick={onDismiss} className={`ml-3 inline-flex flex-shrink-0 justify-center items-center h-5 w-5 rounded-md ${textColors[type]} hover:bg-black/5 focus:outline-none`}>
+                <XIcon className="w-4 h-4" />
+            </button>
         </div>
     );
 };

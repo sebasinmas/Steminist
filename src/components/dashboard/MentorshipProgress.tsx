@@ -8,6 +8,7 @@ import { CalendarIcon, ClockIcon, CheckCircleIcon, StarIcon } from '../common/Ic
 import { Avatar } from '../common/Avatar';
 import SessionFeedbackModal from './SessionFeedbackModal';
 import { submitSessionFeedback } from '../../services/mentorshipService';
+import { useToast } from '../../context/ToastContext';
 
 interface MentorshipProgressProps {
     mentorship: Mentorship;
@@ -27,6 +28,7 @@ const MentorshipProgress: React.FC<MentorshipProgressProps> = ({ mentorship, onS
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+    const { addToast } = useToast();
     let activeSession: Session | undefined = mentorship.sessions.find(s => s.status === 'confirmed' || s.status === 'pending');
 
     const handleOpenFeedback = (sessionId: number) => {
@@ -36,8 +38,21 @@ const MentorshipProgress: React.FC<MentorshipProgressProps> = ({ mentorship, onS
 
     const handleSubmitFeedback = async (rating: number, comment: string) => {
         if (selectedSessionId) {
-            await submitSessionFeedback(selectedSessionId, rating, comment);
-            // Optionally refresh / notify success
+            const success = await submitSessionFeedback(selectedSessionId, rating, comment);
+            if (success) {
+                addToast('Feedback enviado con éxito', 'success');
+                // Update local state to reflect change immediately (optimistic/local update)
+                // Assuming onUpdateSession or similar prop might trigger a refetch, 
+                // but if not, we might need to force a refresh or update local mentorship object if possible.
+                // For now, we rely on the parent (DashboardPage) refreshing eventually, 
+                // or we can try to manually update the passed mentorship prop if we had a setter.
+                // Since we don't have a direct setter for the whole mentorship list here, 
+                // we might want to signal the parent. 
+                // Ideally onUpdateSession could be used if it supported arbitrary updates.
+                onUpdateSession(mentorship.id, selectedSessionId, { hasFeedback: true });
+            } else {
+                addToast('Error al enviar feedback', 'error');
+            }
         }
     };
 
@@ -69,14 +84,20 @@ const MentorshipProgress: React.FC<MentorshipProgressProps> = ({ mentorship, onS
                     <div className="flex items-center gap-2">
                         <p className="text-sm text-muted-foreground">{statusText}</p>
                         {isCompleted && (
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-2 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
-                                onClick={() => session && handleOpenFeedback(session.id)}
-                            >
-                                <StarIcon className="w-4 h-4 mr-1" /> Dar Feedback
-                            </Button>
+                            session?.hasFeedback ? (
+                                <span className="text-xs font-medium text-muted-foreground bg-secondary px-2 py-1 rounded-md">
+                                    Feedback Enviado
+                                </span>
+                            ) : (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
+                                    onClick={() => session && handleOpenFeedback(session.id)}
+                                >
+                                    <StarIcon className="w-4 h-4 mr-1" /> Dar Feedback
+                                </Button>
+                            )
                         )}
                     </div>
                 </div>

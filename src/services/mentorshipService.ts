@@ -28,7 +28,8 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                     video_link,
                     notes,
                     created_at,
-                    updated_at
+                    updated_at,
+                    session_feedback(id) 
                 )
             `);
 
@@ -113,6 +114,7 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                     mentee: mentee, // Link back to mentee
                     rating: 0, // Not in schema provided
                     feedback: '', // Not in schema provided
+                    hasFeedback: session.session_feedback && session.session_feedback.length > 0,
                     video_link: session.video_link,
                     notes: session.notes,
                     created_at: session.created_at,

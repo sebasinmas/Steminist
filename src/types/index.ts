@@ -92,6 +92,7 @@ export interface Session {
   mentorSurvey?: MentorSurvey;
   rating?: number;
   feedback?: string;
+  hasFeedback?: boolean; // New field
   mentor?: Mentor;
   mentee?: Mentee;
   video_link?: string;
