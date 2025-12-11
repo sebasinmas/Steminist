@@ -24,6 +24,7 @@ interface AdminDashboardPageProps {
     updateMentorMaxMentees: (mentorId: number, maxMentees: number) => void;
     supportTickets: SupportTicket[];
     updateSupportTicketStatus: (ticketId: number, status: 'resolved') => void;
+    updateMentorshipTerminationStatus: (mentorshipId: number, action: 'confirm' | 'deny') => void;
 }
 
 const tabTooltips: Record<string, string> = {
@@ -51,7 +52,8 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     updateConnectionStatus,
     updateMentorMaxMentees,
     supportTickets,
-    updateSupportTicketStatus
+    updateSupportTicketStatus,
+    updateMentorshipTerminationStatus
 }) => {
 
     const [selectedMentorForDetails, setSelectedMentorForDetails] = useState<Mentor | null>(null);
@@ -228,9 +230,19 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                                                     </div>
                                                 )}
                                                 <div className="flex gap-2 mt-4">
-                                                    {/* Logic to update mentorship status would go here */}
-                                                    <Button size="sm">Confirmar</Button>
-                                                    <Button size="sm" variant="secondary">Denegar</Button>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => updateMentorshipTerminationStatus(m.id, 'confirm')}
+                                                    >
+                                                        Confirmar
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        onClick={() => updateMentorshipTerminationStatus(m.id, 'deny')}
+                                                    >
+                                                        Denegar
+                                                    </Button>
                                                 </div>
                                             </Card>
                                         ))}

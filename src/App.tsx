@@ -27,6 +27,7 @@ import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketSt
 import { mentorService } from './services/mentorService';
 import { getConnectionRequestsForMentor, getPendingSessionsForUser } from './services/notificationService';
 import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService } from './services/mentorshipService';
+import { mentorshipAdminService } from './services/mentorshipAdminService';
 
 const App: React.FC = () => {
     return (
@@ -113,7 +114,7 @@ const AppContent: React.FC = () => {
 
         const loadPendingSessions = async () => {
             if (isLoggedIn && user) {
-                try{
+                try {
                     setPendingSessions([]);
                     const sessions = await getPendingSessionsForUser(String(user.id));
                     setPendingSessions(sessions);
@@ -301,7 +302,7 @@ const AppContent: React.FC = () => {
 
     const addSession = async (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
         try {
-   
+
             const scheduledAt = `${newSession.date}T${newSession.time}:00`;
 
             const { data, error } = await supabase
@@ -312,7 +313,7 @@ const AppContent: React.FC = () => {
                     duration_minutes: newSession.duration,
                     topic: newSession.topic,
                     mentee_goals: newSession.menteeGoals,
-                    status: 'pending' 
+                    status: 'pending'
                 }])
                 .select(`
                     *,
@@ -328,7 +329,7 @@ const AppContent: React.FC = () => {
 
             const createdSession: Session = {
                 id: data.id,
-                sessionNumber: data.session_number || 0, 
+                sessionNumber: data.session_number || 0,
                 date: newSession.date,
                 time: newSession.time,
                 duration: data.duration_minutes,
@@ -339,13 +340,13 @@ const AppContent: React.FC = () => {
                 mentee: data.mentorship?.mentee
             };
 
-   
+
             setMentorships(prev => prev.map(m => {
                 if (m.id === mentorshipId) {
-            
+
                     const sessionNumber = (m.sessions?.length || 0) + 1;
                     const sessionWithNumber = { ...createdSession, sessionNumber };
-                    
+
                     return { ...m, sessions: [...m.sessions, sessionWithNumber] };
                 }
                 return m;
@@ -362,40 +363,40 @@ const AppContent: React.FC = () => {
     };
 
     const handleUpdateSessionStatus = async (sessionId: number, newStatus: Session['status']) => {
-    try {
-        // 1. Llamada a Supabase
-        const success = await updateSessionService(sessionId, newStatus);
+        try {
+            // 1. Llamada a Supabase
+            const success = await updateSessionService(sessionId, newStatus);
 
-        if (!success) {
-            addToast('No se pudo actualizar el estado de la sesión.', 'error');
-            return;
+            if (!success) {
+                addToast('No se pudo actualizar el estado de la sesión.', 'error');
+                return;
+            }
+
+            // 2. Actualizar estado local de Notificaciones (pendingSessions)
+            // Removemos la sesión de la lista de pendientes porque ya fue procesada
+            setPendingSessions(prev => prev.filter(s => s.id !== sessionId));
+
+            // 3. Actualizar estado local del Dashboard (mentorships)
+            // Para que cuando la mentora vaya al dashboard, la sesión salga como 'confirmed' o 'cancelled'
+            setMentorships(prev => prev.map(m => ({
+                ...m,
+                sessions: m.sessions.map(s =>
+                    s.id === sessionId ? { ...s, status: newStatus } : s
+                )
+            })));
+
+            // 4. Feedback al usuario
+            if (newStatus === 'confirmed') {
+                addToast('Sesión confirmada. Se ha notificado a la mentoreada.', 'success');
+            } else if (newStatus === 'cancelled') {
+                addToast('Solicitud de sesión rechazada.', 'info');
+            }
+
+        } catch (error) {
+            console.error("Error updating session:", error);
+            addToast('Ocurrió un error al procesar la solicitud.', 'error');
         }
-
-        // 2. Actualizar estado local de Notificaciones (pendingSessions)
-        // Removemos la sesión de la lista de pendientes porque ya fue procesada
-        setPendingSessions(prev => prev.filter(s => s.id !== sessionId));
-
-        // 3. Actualizar estado local del Dashboard (mentorships)
-        // Para que cuando la mentora vaya al dashboard, la sesión salga como 'confirmed' o 'cancelled'
-        setMentorships(prev => prev.map(m => ({
-            ...m,
-            sessions: m.sessions.map(s => 
-                s.id === sessionId ? { ...s, status: newStatus } : s
-            )
-        })));
-
-        // 4. Feedback al usuario
-        if (newStatus === 'confirmed') {
-            addToast('Sesión confirmada. Se ha notificado a la mentoreada.', 'success');
-        } else if (newStatus === 'cancelled') {
-            addToast('Solicitud de sesión rechazada.', 'info');
-        }
-
-    } catch (error) {
-        console.error("Error updating session:", error);
-        addToast('Ocurrió un error al procesar la solicitud.', 'error');
-    }
-};
+    };
 
     const updateMentorMaxMentees = async (mentorId: string | number, maxMentees: number) => {
         // Optimistic update
@@ -416,9 +417,88 @@ const AppContent: React.FC = () => {
         }
     };
 
-    const requestMentorshipTermination = (mentorshipId: number, reasons: string[], details: string) => {
-        let reasonText = `Razón(es): ${reasons.join(', ')}.` + (details ? `\nDetalles adicionales: ${details}` : '');
-        setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, status: 'termination_requested', terminationReason: reasonText } : m));
+    const requestMentorshipTermination = async (
+        mentorshipId: number,
+        reasons: string[],
+        details: string
+    ) => {
+        try {
+            // 1) Actualizar en Supabase
+            const updated = await mentorshipAdminService.requestTermination(
+                mentorshipId,
+                reasons,
+                details
+            );
+
+            // 2) Actualizar estado local para que Dashboard y Admin lo vean
+            setMentorships(prev =>
+                prev.map(m =>
+                    m.id === mentorshipId
+                        ? {
+                            ...m,
+                            status: updated.status as Mentorship['status'],
+                            terminationReason:
+                                // según cómo venga del backend
+                                (updated as any).termination_reason ??
+                                (updated as any).terminationReason ??
+                                m.terminationReason,
+                        }
+                        : m
+                )
+            );
+
+            addToast('Solicitud de terminación enviada para revisión.', 'info');
+        } catch (error: any) {
+            console.error('Error solicitando terminación de mentoría:', error);
+            addToast(
+                `No se pudo enviar la solicitud de terminación: ${error?.message ?? 'Error desconocido'}`,
+                'error'
+            );
+            throw error; // opcional, por si quieres manejarlo en el Dashboard
+        }
+    };
+
+    const updateMentorshipTerminationStatus = async (
+        mentorshipId: number,
+        action: 'confirm' | 'deny'
+    ) => {
+        try {
+            // Elegimos qué servicio llamar
+            const serviceFn =
+                action === 'confirm'
+                    ? mentorshipAdminService.confirmTermination
+                    : mentorshipAdminService.denyTermination;
+
+            const updated = await serviceFn(mentorshipId);
+
+            // Actualizar estado local
+            setMentorships(prev =>
+                prev.map(m =>
+                    m.id === mentorshipId
+                        ? {
+                            ...m,
+                            status: updated.status as Mentorship['status'],
+                            terminationReason:
+                                (updated as any).termination_reason ??
+                                (updated as any).terminationReason ??
+                                m.terminationReason,
+                        }
+                        : m
+                )
+            );
+
+            if (action === 'confirm') {
+                addToast('Mentoría terminada correctamente.', 'success');
+            } else {
+                addToast('Solicitud de terminación denegada. La mentoría sigue activa.', 'info');
+            }
+        } catch (error: any) {
+            console.error('Error actualizando estado de terminación:', error);
+            addToast(
+                `No se pudo actualizar la solicitud de terminación: ${error?.message ?? 'Error desconocido'}`,
+                'error'
+            );
+        }
     };
 
     const submitSupportTicket = async (subject: string, message: string) => {
@@ -508,7 +588,7 @@ const AppContent: React.FC = () => {
                             <NotificationsPage
                                 sessions={pendingSessions}
                                 connectionRequests={connectionRequests}
-                                updateSessionStatus={handleUpdateSessionStatus} 
+                                updateSessionStatus={handleUpdateSessionStatus}
                                 updateConnectionStatus={updateConnectionStatus}
                             />
                         } />
@@ -523,6 +603,7 @@ const AppContent: React.FC = () => {
                                     updateMentorMaxMentees={updateMentorMaxMentees}
                                     supportTickets={supportTickets}
                                     updateSupportTicketStatus={updateSupportTicketStatus}
+                                    updateMentorshipTerminationStatus={updateMentorshipTerminationStatus}
                                 />
                                 : <Navigate to="/dashboard" replace />
                         } />
