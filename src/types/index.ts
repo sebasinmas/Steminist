@@ -33,7 +33,7 @@ export interface BaseUser {
   availability: Record<string, string[]>;
   title?: string;
   company?: string;
-  experience?: 'entry' | 'mid' | 'senior' | 'lead';
+  experience?: 'Entry' | 'Mid' | 'Senior' | 'Lead' | 'entry' | 'mid' | 'senior' | 'lead';
   timezone?: string;
   motivations?: string[];
 }

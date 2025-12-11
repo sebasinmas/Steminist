@@ -52,6 +52,15 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
                     <h2 className="text-3xl font-bold">{mentor.name}</h2>
                     <p className="text-lg text-primary">{mentor.title}</p>
                     <p className="text-md text-muted-foreground">{mentor.company}</p>
+
+                    <div className="flex justify-center mt-3">
+                        <span className={`px-4 py-1 rounded-full text-sm font-semibold border ${mentor.experience === 'Senior' || mentor.experience === 'Lead' || mentor.experience === 'senior' || mentor.experience === 'lead' ? 'bg-purple-500/10 text-purple-600 border-purple-200' :
+                            mentor.experience === 'Mid' || mentor.experience === 'mid' ? 'bg-blue-500/10 text-blue-600 border-blue-200' :
+                                'bg-green-500/10 text-green-600 border-green-200'
+                            }`}>
+                            {mentor.experience}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6">

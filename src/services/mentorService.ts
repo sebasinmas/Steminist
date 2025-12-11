@@ -5,7 +5,7 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews, max_mentees), availability_blocks(day_of_week, start_time, end_time), mentorships!mentor_id(id, status)')
+            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews, max_mentees, expertise), availability_blocks(day_of_week, start_time, end_time), mentorships!mentor_id(id, status)')
             .eq('role', 'mentor');
 
         if (error) {
@@ -51,11 +51,11 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
                 email: user.email || '',
                 role: 'mentor',
                 avatarUrl: user.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (fullName || 'default'),
-                expertise: user.expertise || [],
+                expertise: user.expertise || [], // Legacy field, might not be used
                 availability: availability,
                 title: profile?.title || 'Mentor',
                 company: profile?.company || 'N/A',
-                roleLevel: user.role_level || 'mid',
+                experience: profile?.expertise || 'Mid',
                 timezone: user.timezone || 'UTC',
                 motivations: user.motivations || [],
                 rating: profile?.average_rating ?? 0,
