@@ -4,6 +4,7 @@ import Card from '../common/Card';
 import { XIcon, StarIcon, ClockIcon, CalendarIcon } from '../common/Icons';
 import Tag from '../common/Tag';
 import { SURVEY_OPTIONS } from '../../utils/constants';
+import { Avatar } from '../common/Avatar';
 
 interface AnalyticsDetailModalProps {
     isOpen: boolean;
@@ -20,7 +21,8 @@ const getStatusPill = (status: Session['status']) => {
         needs_confirmation: "bg-blue-500/80 text-white",
         rescheduled: "bg-purple-500/80 text-white",
         // FIX: Added style for the new 'termination_requested' status to match changes in types.ts
-        termination_requested: "bg-orange-500/80 text-white"
+        termination_requested: "bg-orange-500/80 text-white",
+        active: "bg-blue-600 text-white"
     };
     return <Tag className={styles[status]}>{status.replace('_', ' ')}</Tag>;
 };
@@ -39,7 +41,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({ isOpen, onC
                 <div className="flex items-start justify-between pb-4 border-b border-border">
                     <div className="flex items-center justify-between flex-grow">
                         <div className="flex items-center space-x-4">
-                            <img src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 rounded-full" />
+                            <Avatar src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16" />
                             <div>
                                 <h3 className="font-bold">Mentora</h3>
                                 <p className="text-lg">{mentor.name}</p>
@@ -50,7 +52,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({ isOpen, onC
                                 <h3 className="font-bold">Mentoreada</h3>
                                 <p className="text-lg">{mentee.name}</p>
                             </div>
-                            <img src={mentee.avatarUrl} alt={mentee.name} className="w-16 h-16 rounded-full" />
+                            <Avatar src={mentee.avatarUrl} alt={mentee.name} className="w-16 h-16" />
                         </div>
                     </div>
                     <button onClick={onClose} className="ml-4 flex-shrink-0 text-muted-foreground hover:text-foreground">

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { ChevronLeftIcon, DocumentTextIcon } from '../components/common/Icons';
+import { Avatar } from '../components/common/Avatar';
 
 interface FileLibraryPageProps {
     mentorships: Mentorship[];
@@ -16,7 +17,7 @@ const FileLibraryPage: React.FC<FileLibraryPageProps> = ({ mentorships }) => {
 
     if (!user) return null;
 
-    const myMentorships = mentorships.filter(m => 
+    const myMentorships = mentorships.filter(m =>
         role === 'mentor' ? m.mentor.id === user.id : m.mentee.id === user.id
     );
 
@@ -49,14 +50,14 @@ const FileLibraryPage: React.FC<FileLibraryPageProps> = ({ mentorships }) => {
             </Button>
             <h1 className="text-4xl font-bold mb-2">Biblioteca de Archivos</h1>
             <p className="text-lg text-muted-foreground mb-8">Todos los documentos de tus mentorías en un solo lugar.</p>
-            
+
             <div className="space-y-8">
                 {myMentorships.map(mentorship => {
                     const otherParty = role === 'mentor' ? mentorship.mentee : mentorship.mentor;
                     return (
                         <Card key={mentorship.id} className="p-0 overflow-hidden">
                             <div className="bg-secondary p-4 flex items-center space-x-4">
-                                <img src={otherParty.avatarUrl} alt={otherParty.name} className="w-12 h-12 rounded-full" />
+                                <Avatar src={otherParty.avatarUrl} alt={otherParty.name} className="w-12 h-12" />
                                 <div>
                                     <h2 className="text-xl font-bold">Mentoría con {otherParty.name}</h2>
                                     <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${mentorship.status === 'active' ? 'bg-green-500/80 text-white' : 'bg-gray-500 text-white'}`}>
@@ -81,7 +82,7 @@ const FileLibraryPage: React.FC<FileLibraryPageProps> = ({ mentorships }) => {
                         </Card>
                     );
                 })}
-                 {myMentorships.length === 0 && (
+                {myMentorships.length === 0 && (
                     <Card>
                         <p className="text-muted-foreground text-center py-8">Aún no tienes archivos en tu biblioteca.</p>
                     </Card>
