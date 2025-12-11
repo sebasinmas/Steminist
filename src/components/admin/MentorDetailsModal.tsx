@@ -42,7 +42,7 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
-            <div className="bg-card rounded-lg p-6 m-4 max-w-3xl w-full relative transform transition-all flex flex-col h-[90vh]">
+            <div className="bg-card rounded-lg p-6 m-4 max-w-3xl w-full relative transform transition-all max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                     <XIcon className="w-6 h-6" />
                 </button>
@@ -52,6 +52,15 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
                     <h2 className="text-3xl font-bold">{mentor.name}</h2>
                     <p className="text-lg text-primary">{mentor.title}</p>
                     <p className="text-md text-muted-foreground">{mentor.company}</p>
+
+                    <div className="flex justify-center mt-3">
+                        <span className={`px-4 py-1 rounded-full text-sm font-semibold border ${mentor.experience === 'Senior' || mentor.experience === 'Lead' || mentor.experience === 'senior' || mentor.experience === 'lead' ? 'bg-purple-500/10 text-purple-600 border-purple-200' :
+                            mentor.experience === 'Mid' || mentor.experience === 'mid' ? 'bg-blue-500/10 text-blue-600 border-blue-200' :
+                                'bg-green-500/10 text-green-600 border-green-200'
+                            }`}>
+                            {mentor.experience}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6">
@@ -61,7 +70,7 @@ const MentorDetailsModal: React.FC<MentorDetailsModalProps> = ({ mentor, mentors
                     <DetailStat icon={<StarIcon />} value={stats.displayRating} label="Rating Promedio" />
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-2">
+                <div className="pt-2">
                     <h3 className="text-xl font-semibold mb-4">Historial de Mentorías</h3>
                     <div className="space-y-3">
                         {mentorMentorships.length > 0 ? (

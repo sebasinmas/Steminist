@@ -5,6 +5,7 @@ import React, {
     ReactNode,
     useMemo,
     useEffect,
+    useRef,
 } from 'react';
 import { supabase } from '../lib/supabase';
 import { authService } from '../services/authService';
@@ -23,7 +24,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ---------------- HELPERS DE ACCESO A SUPABASE (SCHEMA MODELS) ---------------- //
+// ---------------- HELPERS SUPABASE ---------------- //
 
 async function fetchUserBase(userId: string) {
     const { data, error } = await supabase
@@ -32,7 +33,7 @@ async function fetchUserBase(userId: string) {
             'id, email, role, avatar_url, timezone, first_name, last_name, created_at, updated_at',
         )
         .eq('id', userId)
-        .maybeSingle(); // evita romper si aún no existe fila
+        .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -51,6 +52,22 @@ async function fetchMentorProfile(userId: string) {
     return data;
 }
 
+async function fetchPapers(userId: string) {
+    const { data, error } = await supabase
+        .from('papers')
+        .select('title, link, user_id')
+        .eq('user_id', userId)
+        .order('id', { ascending: true });
+
+    if (error) {
+        console.error('[AuthContext] fetchPapers error', error);
+        throw error;
+    }
+
+    console.log('[AuthContext] fetchPapers data', data);
+    return data || [];
+}
+
 async function fetchMenteeProfile(userId: string) {
     const { data, error } = await supabase
         .from('mentee_profiles')
@@ -67,20 +84,18 @@ async function fetchMenteeProfile(userId: string) {
 async function fetchAvailability(userId: string) {
     const { data, error } = await supabase
         .from('availability_blocks')
-        .select('specific_date, start_time')
+        .select('specific_date, day_of_week, start_time')
         .eq('user_id', userId)
-        .eq('is_booked', false); // opcional: solo slots no reservados
+        .eq('is_booked', false);
 
     if (error) throw error;
 
-    // availability: { "YYYY-MM-DD": ["HH:MM", "HH:MM", ...] }
-    const availability: { [date: string]: string[] } = {};
+    const availability: { [key: string]: string[] } = {};
 
     (data || []).forEach((block: any) => {
-        const dateKey: string = block.specific_date; // "2025-12-18"
+        const dateKey: string = block.specific_date || block.day_of_week?.toLowerCase();
         if (!dateKey) return;
 
-        // start_time viene como "HH:MM:SS" -> "HH:MM"
         const time = block.start_time.slice(0, 5);
 
         if (!availability[dateKey]) {
@@ -91,15 +106,14 @@ async function fetchAvailability(userId: string) {
         }
     });
 
-    // Ordenar las horas en cada fecha
-    Object.keys(availability).forEach(dateKey => {
-        availability[dateKey].sort();
+    Object.keys(availability).forEach(key => {
+        availability[key].sort();
     });
 
     return availability;
 }
 
-// ---------------- BUILDERS TIPADOS (SIN CASTS PELIGROSOS) ---------------- //
+// ---------------- BUILDERS TIPADOS ---------------- //
 
 function buildAdminUserFromRow(row: any): AdminUser {
     const firstName: string = row?.first_name ?? '';
@@ -153,9 +167,8 @@ function buildMentorUser(base: any, profile: any | null): Mentor {
         longBio: profile?.bio ?? '',
         mentorshipGoals: profile?.mentorship_goals ?? [],
         maxMentees: profile?.max_mentees ?? 3,
-        links: profile?.paper_link
-            ? [{ title: 'Publicación', url: profile.paper_link }]
-            : [],
+
+        links: [],
     };
 }
 
@@ -188,6 +201,7 @@ function buildMenteeUser(base: any, profile: any | null): Mentee {
         mentorshipGoals: profile?.mentorship_goals ?? [],
         pronouns: profile?.pronouns ?? '',
         neurodivergence: profile?.neurodivergence_details ?? '',
+        isNeurodivergent: profile?.is_neurodivergent ?? false,
     };
 }
 
@@ -195,20 +209,26 @@ function buildMenteeUser(base: any, profile: any | null): Mentee {
 async function enrichUserFromSchema(userId: string): Promise<User | null> {
     const baseUserRow = await fetchUserBase(userId);
     if (!baseUserRow) {
-        // Si aún no existe en models.users, no podemos construir un User
         return null;
     }
 
     const role = (baseUserRow.role || 'mentee') as UserRole;
 
     if (role === 'mentor') {
-        const [mentorProfile, availability] = await Promise.all([
+        const [mentorProfile, availability, papers] = await Promise.all([
             fetchMentorProfile(userId),
             fetchAvailability(userId),
+            fetchPapers(userId),
         ]);
+
         const baseMentor = buildMentorUser(baseUserRow, mentorProfile);
-        // Sobrescribimos availability: {} del builder con lo que viene de BD
-        return { ...baseMentor, availability };
+
+        const links = papers.map((p: any) => ({
+            title: p.title || 'Publicación',
+            url: p.link || '',
+        }));
+
+        return { ...baseMentor, availability, links };
     }
 
     if (role === 'mentee') {
@@ -220,43 +240,41 @@ async function enrichUserFromSchema(userId: string): Promise<User | null> {
         return { ...baseMentee, availability };
     }
 
-    // Para admin u otros roles, devolvemos el subtipo AdminUser (sin availability)
     return buildAdminUserFromRow(baseUserRow);
 }
 
 // ---------------------- PROVIDER ---------------------- //
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({
-    children,
-}) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
-    const fetchingProfileRef = React.useRef<Set<string>>(new Set()); // Track ongoing fetches
+    const fetchingProfileRef = useRef<Set<string>>(new Set());
+    const currentUserIdRef = useRef<string | null>(null);
 
-    // Helper function to create a fallback user from session metadata
+    // Usuario mínimo desde sesión: NO forzar rol = 'mentee'
     const createFallbackUser = (sessionUser: any): User => {
         const metadata = sessionUser.user_metadata || {};
-        const role = (metadata.role || 'mentee') as UserRole;
+        const roleFromMetadata = metadata.role as UserRole | undefined;
 
-        // Create base user object
-        const baseUser = {
+        const baseUser: any = {
             id: sessionUser.id,
             name: metadata.name || sessionUser.email?.split('@')[0] || 'User',
             email: sessionUser.email || '',
-            role: role,
             avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
             interests: metadata.interests || [],
             availability: metadata.availability || {},
         };
 
-        // Return as User type (union type, so we cast it)
+        if (roleFromMetadata) {
+            baseUser.role = roleFromMetadata;
+        }
+
         return baseUser as User;
     };
 
     const fetchUserProfile = async (sessionUser: any): Promise<User | null> => {
         const userId = sessionUser.id;
 
-        // Evitar llamadas duplicadas en paralelo
         if (fetchingProfileRef.current.has(userId)) {
             console.log('⏭️ [AuthContext] Ya hay una consulta en curso para este usuario, omitiendo...');
             return null;
@@ -267,7 +285,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         console.log('🔍 [AuthContext] Iniciando fetchUserProfile para usuario:', userId);
 
         try {
-            // 1) Leer fila base de public.users
             const baseUserRow = await fetchUserBase(userId);
             if (!baseUserRow) {
                 const elapsedTime = performance.now() - startTime;
@@ -280,17 +297,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                 return null;
             }
 
-            // 2) Según rol, leer perfil extendido + availability y construir User tipado
             const role = (baseUserRow.role || 'mentee') as UserRole;
             let fullUser: User;
 
             if (role === 'mentor') {
-                const [mentorProfile, availability] = await Promise.all([
+                const [mentorProfile, availability, papers] = await Promise.all([
                     fetchMentorProfile(userId),
                     fetchAvailability(userId),
+                    fetchPapers(userId),
                 ]);
+
                 const baseMentor = buildMentorUser(baseUserRow, mentorProfile);
-                fullUser = { ...baseMentor, availability };
+
+                const links = papers.map((p: any) => ({
+                    title: p.title || 'Publicación',
+                    url: p.link || '',
+                }));
+
+                fullUser = { ...baseMentor, availability, links };
             } else if (role === 'mentee') {
                 const [menteeProfile, availability] = await Promise.all([
                     fetchMenteeProfile(userId),
@@ -304,7 +328,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
             const totalTime = performance.now() - startTime;
             console.log(
-                `✨ [AuthContext] Usuario completo construido (${totalTime.toFixed(2)}ms total)`,
+                `✨ [AuthContext] Usuario completo construido (${totalTime.toFixed(
+                    2,
+                )}ms total)`,
                 fullUser,
             );
             fetchingProfileRef.current.delete(userId);
@@ -322,7 +348,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
     };
 
-    // helper público para refrescar el usuario desde fuera
     const refreshUser = async () => {
         console.log('[AuthContext] refreshUser start');
         const {
@@ -342,97 +367,113 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             const fullUser = await enrichUserFromSchema(session.user.id);
             console.log('[AuthContext] enrichUserFromSchema done', fullUser);
             setUser(fullUser);
+            currentUserIdRef.current = session.user.id;
         } else {
             console.log('[AuthContext] no session.user, setting user null');
             setUser(null);
+            currentUserIdRef.current = null;
         }
 
         console.log('[AuthContext] refreshUser end');
     };
 
     useEffect(() => {
-        // Check active session - FAST path: set user immediately from session, then fetch full profile
         const initSession = async () => {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                const {
+                    data: { session },
+                    error,
+                } = await supabase.auth.getSession();
 
                 if (error) {
                     console.error('Error getting session:', error);
                     setUser(null);
+                    currentUserIdRef.current = null;
                     setLoading(false);
                     return;
                 }
 
                 if (session?.user) {
-                    // IMMEDIATELY set user from session metadata (fast, no DB call)
                     console.log('⚡ [AuthContext] Estableciendo usuario básico desde sesión (instantáneo)');
                     const fallbackUser = createFallbackUser(session.user);
                     setUser(fallbackUser);
-                    setLoading(false); // Set loading to false immediately so app can render
-                    console.log('✅ [AuthContext] Loading completado, app puede renderizar');
+                    currentUserIdRef.current = session.user.id;
+                    setLoading(false);
 
-                    // Then, in the background, try to fetch full profile
-                    // This doesn't block the UI
                     console.log('🔄 [AuthContext] Iniciando carga de perfil completo en segundo plano...');
                     fetchUserProfile(session.user)
-                        .then((fullUser) => {
+                        .then(fullUser => {
                             if (fullUser) {
-                                console.log('📝 [AuthContext] Actualizando usuario con perfil completo');
-                                setUser(fullUser); // Update with full profile if available
-                            } else {
-                                // fullUser is null only if fetch was skipped (duplicate) or failed
-                                // If it was skipped, the original fetch will update the user
-                                // If it failed, we keep the fallback user
-                                console.log('ℹ️ [AuthContext] Consulta omitida o fallida, manteniendo usuario actual');
+                                console.log('📝 [AuthContext] Actualizando usuario con perfil completo (initSession)');
+                                setUser(fullUser);
                             }
                         })
-                        .catch((err) => {
-                            console.error('❌ [AuthContext] Error fetching user profile (non-blocking):', err);
-                            // Keep using fallback user, no need to update
+                        .catch(err => {
+                            console.error(
+                                '❌ [AuthContext] Error fetching user profile (non-blocking / initSession):',
+                                err,
+                            );
                         });
                 } else {
                     setUser(null);
+                    currentUserIdRef.current = null;
                     setLoading(false);
                 }
             } catch (err) {
                 console.error('Unexpected error in initSession:', err);
                 setUser(null);
+                currentUserIdRef.current = null;
                 setLoading(false);
             }
         };
 
         initSession();
 
-        // Listen for changes
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (_event, session) => {
             try {
                 if (session?.user) {
-                    // Set user immediately from session (fast)
-                    console.log('🔄 [AuthContext] Auth state change - estableciendo usuario básico');
+                    const incomingId = session.user.id;
+
+                    if (currentUserIdRef.current === incomingId) {
+                        console.log(
+                            '🔄 [AuthContext] Auth state change - mismo usuario, NO recargamos perfil ni tocamos user',
+                        );
+                        return;
+                    }
+
+                    console.log('🔄 [AuthContext] Auth state change - nuevo usuario, recargando perfil');
+                    currentUserIdRef.current = incomingId;
+
                     const fallbackUser = createFallbackUser(session.user);
                     setUser(fallbackUser);
                     setLoading(false);
 
-                    // Then fetch full profile in background (non-blocking)
                     fetchUserProfile(session.user)
-                        .then((fullUser) => {
+                        .then(fullUser => {
                             if (fullUser) {
-                                console.log('📝 [AuthContext] Auth state change - actualizando con perfil completo');
+                                console.log(
+                                    '📝 [AuthContext] Auth state change - actualizando con perfil completo',
+                                );
                                 setUser(fullUser);
                             }
                         })
-                        .catch((err) => {
-                            console.error('❌ [AuthContext] Error fetching user profile in auth state change (non-blocking):', err);
+                        .catch(err => {
+                            console.error(
+                                '❌ [AuthContext] Error fetching user profile in auth state change (non-blocking):',
+                                err,
+                            );
                         });
                 } else {
                     setUser(null);
+                    currentUserIdRef.current = null;
                     setLoading(false);
                 }
             } catch (err) {
                 console.error('Unexpected error in auth state change:', err);
                 setUser(null);
+                currentUserIdRef.current = null;
                 setLoading(false);
             }
         });
@@ -445,9 +486,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const login = async (email: string, password?: string) => {
         try {
             await authService.login(email, password);
-            // State update handled by onAuthStateChange
         } catch (error) {
-            console.error("Login failed", error);
+            console.error('Login failed', error);
             throw error;
         }
     };
@@ -455,21 +495,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const logout = async () => {
         try {
             await authService.logout();
-            // Force clear local storage to ensure token is gone
             localStorage.removeItem('sb-access-token');
             localStorage.removeItem('sb-refresh-token');
-            // Also clear any other app-specific keys if necessary
             setUser(null);
+            currentUserIdRef.current = null;
         } catch (error) {
-            console.error("Logout failed", error);
-            // Even if API fails, force client-side logout
+            console.error('Logout failed', error);
             setUser(null);
+            currentUserIdRef.current = null;
             localStorage.clear();
         }
     };
 
     const register = async (data: any, role: 'mentee' | 'mentor') => {
-        // 1) Crear en Auth
         const { data: authData, error } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
@@ -483,7 +521,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             throw new Error('No se pudo obtener el ID del usuario después del registro');
         }
 
-        // 2) Crear fila en models.users (vía view public.users)
         const { error: baseErr } = await supabase.from('users').insert({
             id: userId,
             email: data.email,
@@ -496,7 +533,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
         if (baseErr) throw baseErr;
 
-        // 3) Crear perfil extendido según rol
         if (role === 'mentor') {
             const { error: mentorErr } = await supabase.from('mentor_profiles').insert({
                 user_id: userId,
@@ -527,20 +563,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             if (menteeErr) throw menteeErr;
         }
 
-        // 4) Cargar usuario enriquecido al contexto
         const fullUser = await enrichUserFromSchema(userId);
         setUser(fullUser);
+        currentUserIdRef.current = userId;
+        setLoading(false);
     };
 
     const value = useMemo(() => {
-        let role: UserRole | null = null;
-        if (user) {
-            role = user.role;
+        let resolvedRole: UserRole | null = null;
+        if (user && (user as any).role) {
+            resolvedRole = user.role;
         }
 
         return {
             user,
-            role,
+            role: resolvedRole,
             isLoggedIn: !!user,
             loading,
             login,
@@ -552,7 +589,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
+
+            {loading && (
+                <div className="fixed inset-0 flex items-center justify-center bg-background/80 z-[9999]">
+                    <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                        <p className="mt-4 text-muted-foreground">Cargando sesión...</p>
+                    </div>
+                </div>
+            )}
         </AuthContext.Provider>
     );
 };
