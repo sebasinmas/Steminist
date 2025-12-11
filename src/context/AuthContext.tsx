@@ -51,6 +51,22 @@ async function fetchMentorProfile(userId: string) {
     return data;
 }
 
+async function fetchPapers(userId: string) {
+    const { data, error } = await supabase
+        .from('papers')
+        .select('title, link, user_id')
+        .eq('user_id', userId)
+        .order('id', { ascending: true });
+
+    if (error) {
+        console.error('[AuthContext] fetchPapers error', error);
+        throw error;
+    }
+
+    console.log('[AuthContext] fetchPapers data', data);
+    return data || [];
+}
+
 async function fetchMenteeProfile(userId: string) {
     const { data, error } = await supabase
         .from('mentee_profiles')
@@ -155,9 +171,9 @@ function buildMentorUser(base: any, profile: any | null): Mentor {
         longBio: profile?.bio ?? '',
         mentorshipGoals: profile?.mentorship_goals ?? [],
         maxMentees: profile?.max_mentees ?? 3,
-        links: profile?.paper_link
-            ? [{ title: 'Publicación', url: profile.paper_link }]
-            : [],
+
+        // links se inyectará después desde fetchPapers
+        links: [],
     };
 }
 
@@ -197,20 +213,26 @@ function buildMenteeUser(base: any, profile: any | null): Mentee {
 async function enrichUserFromSchema(userId: string): Promise<User | null> {
     const baseUserRow = await fetchUserBase(userId);
     if (!baseUserRow) {
-        // Si aún no existe en models.users, no podemos construir un User
         return null;
     }
 
     const role = (baseUserRow.role || 'mentee') as UserRole;
 
     if (role === 'mentor') {
-        const [mentorProfile, availability] = await Promise.all([
+        const [mentorProfile, availability, papers] = await Promise.all([
             fetchMentorProfile(userId),
             fetchAvailability(userId),
+            fetchPapers(userId),
         ]);
+
         const baseMentor = buildMentorUser(baseUserRow, mentorProfile);
-        // Sobrescribimos availability: {} del builder con lo que viene de BD
-        return { ...baseMentor, availability };
+
+        const links = papers.map((p: any) => ({
+            title: p.title || 'Publicación',
+            url: p.link || '',
+        }));
+
+        return { ...baseMentor, availability, links };
     }
 
     if (role === 'mentee') {
@@ -222,7 +244,6 @@ async function enrichUserFromSchema(userId: string): Promise<User | null> {
         return { ...baseMentee, availability };
     }
 
-    // Para admin u otros roles, devolvemos el subtipo AdminUser (sin availability)
     return buildAdminUserFromRow(baseUserRow);
 }
 
@@ -282,17 +303,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                 return null;
             }
 
-            // 2) Según rol, leer perfil extendido + availability y construir User tipado
+            // 2) Según rol, leer perfil extendido + availability (+ papers para mentor) y construir User tipado
             const role = (baseUserRow.role || 'mentee') as UserRole;
             let fullUser: User;
 
             if (role === 'mentor') {
-                const [mentorProfile, availability] = await Promise.all([
+                const [mentorProfile, availability, papers] = await Promise.all([
                     fetchMentorProfile(userId),
                     fetchAvailability(userId),
+                    fetchPapers(userId),
                 ]);
+
                 const baseMentor = buildMentorUser(baseUserRow, mentorProfile);
-                fullUser = { ...baseMentor, availability };
+
+                const links = papers.map((p: any) => ({
+                    title: p.title || 'Publicación',
+                    url: p.link || '',
+                }));
+
+                fullUser = { ...baseMentor, availability, links };
             } else if (role === 'mentee') {
                 const [menteeProfile, availability] = await Promise.all([
                     fetchMenteeProfile(userId),
