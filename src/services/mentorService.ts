@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { Mentor, Mentorship } from '../types';
 
+
 export const fetchMentors = async (): Promise<Mentor[]> => {
     try {
         const { data, error } = await supabase
@@ -182,4 +183,115 @@ export const updateMentorMaxMentees = async (mentorId: string, maxMentees: numbe
         console.error('Unexpected error updating max mentees:', err);
         return false;
     }
+};
+
+
+const addDays = (date: Date, days: number) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+};
+
+
+const getDayOfWeekString = (dayIndex: number): string => {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[dayIndex];
+};
+
+
+const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+
+
+export const getMentorAvailability = async (mentorId: number | string): Promise<Record<string, string[]>> => {
+    const startDate = new Date();
+    const endDate = addDays(startDate, 30); 
+
+    // 1. Obtener bloques (sin cambios)
+    const { data: blocks, error: blocksError } = await supabase
+        .from('availability_blocks')
+        .select('*')
+        .eq('user_id', mentorId)
+        .eq('is_booked', false);
+
+    if (blocksError) {
+        console.error('Error fetching availability blocks:', blocksError);
+        return {};
+    }
+
+
+    const { data: existingSessions, error: sessionsError } = await supabase
+        .rpc('get_mentor_booked_slots', { 
+            target_mentor_id: mentorId 
+        });
+
+    if (sessionsError) {
+        console.error('Error fetching booked slots:', sessionsError);
+    }
+
+    const availabilityMap: Record<string, string[]> = {};
+    const bookedMap: Record<string, string[]> = {};
+
+    if (existingSessions) {
+        existingSessions.forEach((session: { scheduled_at: string }) => {
+      
+            const dateObj = new Date(session.scheduled_at);
+            
+
+            const year = dateObj.getUTCFullYear();
+            const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getUTCDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`;
+            
+
+            const hour = String(dateObj.getUTCHours()).padStart(2, '0');
+            const minute = String(dateObj.getUTCMinutes()).padStart(2, '0');
+            const timeKey = `${hour}:${minute}`;
+            
+            if (!bookedMap[dateKey]) bookedMap[dateKey] = [];
+            bookedMap[dateKey].push(timeKey);
+        });
+    }
+
+
+    for (let d = 0; d < 30; d++) {
+        const currentDate = addDays(startDate, d);
+        const dateKey = getLocalDateString(currentDate); 
+        const dayOfWeek = getDayOfWeekString(currentDate.getDay());
+        
+        let daySlots: string[] = [];
+
+        blocks?.forEach(block => {
+            let isMatch = false;
+
+            if (block.specific_date === dateKey) {
+                isMatch = true;
+            } else if (block.is_recurring && block.day_of_week?.toLowerCase() === dayOfWeek && !block.specific_date) {
+                isMatch = true;
+            }
+
+            if (isMatch) {
+             
+                const startTime = block.start_time.slice(0, 5); 
+                
+               
+                const isBooked = bookedMap[dateKey]?.includes(startTime);
+
+                if (!isBooked) {
+                    daySlots.push(startTime);
+                }
+            }
+        });
+
+        if (daySlots.length > 0) {
+            availabilityMap[dateKey] = [...new Set(daySlots)].sort();
+        }
+    }
+
+    return availabilityMap;
 };
