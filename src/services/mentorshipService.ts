@@ -296,3 +296,29 @@ export const completeSessionWithSurvey = async (
         return false;
     }
 };
+
+export const submitSessionFeedback = async (sessionId: number, rating: number, comment: string): Promise<boolean> => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { error } = await supabase
+            .from('session_feedback')
+            .insert({
+                session_id: sessionId,
+                reviewer_id: user.id,
+                rating,
+                comment,
+            });
+
+        if (error) {
+            console.error('Error submitting feedback:', error);
+            throw error;
+        }
+        return true;
+    } catch (err) {
+        console.error('Unexpected error submitting feedback:', err);
+        return false;
+    }
+};
+

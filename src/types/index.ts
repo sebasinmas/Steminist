@@ -145,3 +145,13 @@ export interface AdminUser {
 
 // User ahora es unión de Mentee | Mentor | AdminUser
 export type User = Mentee | Mentor | AdminUser;
+
+export interface SessionFeedback {
+  id: number;
+  session_id: number;
+  reviewer_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  updated_at?: string;
+}
