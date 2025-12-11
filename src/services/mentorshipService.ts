@@ -365,6 +365,21 @@ export const submitSessionFeedback = async (sessionId: number, rating: number, c
             console.error('Error submitting feedback:', error);
             throw error;
         }
+        // Actualizar el rating de la mentora
+        const { data: relData } = await supabase
+             .from('sessions')
+             .select(`
+                mentorship:mentorships ( mentor_id )
+             `)
+             .eq('id', sessionId)
+             .single();
+
+        const mentorId = (relData?.mentorship as any)?.mentor_id;
+
+        if (mentorId) {
+            ratingService.updateMentorRating(mentorId);
+        }
+
         return true;
     } catch (err) {
         console.error('Unexpected error submitting feedback:', err);
