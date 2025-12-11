@@ -326,8 +326,12 @@ const AppContent: React.FC = () => {
     };
 
 
-    const addSession = async (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
+   const addSession = async (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
         try {
+
+            const currentMentorship = mentorships.find(m => m.id === mentorshipId);
+  
+            const nextSessionNumber = (currentMentorship?.sessions.length || 0) + 1;
 
             const scheduledAt = `${newSession.date}T${newSession.time}:00`;
 
@@ -335,6 +339,7 @@ const AppContent: React.FC = () => {
                 .from('sessions')
                 .insert([{
                     mentorship_id: mentorshipId,
+                    session_number: nextSessionNumber, 
                     scheduled_at: scheduledAt,
                     duration_minutes: newSession.duration,
                     topic: newSession.topic,
@@ -355,7 +360,7 @@ const AppContent: React.FC = () => {
 
             const createdSession: Session = {
                 id: data.id,
-                sessionNumber: data.session_number || 0,
+                sessionNumber: data.session_number, 
                 date: newSession.date,
                 time: newSession.time,
                 duration: data.duration_minutes,
@@ -366,14 +371,9 @@ const AppContent: React.FC = () => {
                 mentee: data.mentorship?.mentee
             };
 
-
             setMentorships(prev => prev.map(m => {
                 if (m.id === mentorshipId) {
-
-                    const sessionNumber = (m.sessions?.length || 0) + 1;
-                    const sessionWithNumber = { ...createdSession, sessionNumber };
-
-                    return { ...m, sessions: [...m.sessions, sessionWithNumber] };
+                    return { ...m, sessions: [...m.sessions, createdSession] };
                 }
                 return m;
             }));
