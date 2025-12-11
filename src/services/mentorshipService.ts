@@ -231,3 +231,20 @@ export const fetchMentees = async (): Promise<Mentee[]> => {
         return [];
     }
 };
+export const updateSessionStatus = async (sessionId: number, newStatus: SessionStatus): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from('sessions')
+            .update({ status: newStatus })
+            .eq('id', sessionId);
+
+        if (error) {
+            console.error('Error updating session status:', error);
+            throw error;
+        }
+        return true;
+    } catch (err) {
+        console.error('Unexpected error updating session status:', err);
+        return false;
+    }
+};

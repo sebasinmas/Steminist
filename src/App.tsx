@@ -23,10 +23,10 @@ import FileLibraryPage from './pages/FileLibraryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './services/mentorService';
-import { fetchMentorships, fetchMentees } from './services/mentorshipService';
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 import { mentorService } from './services/mentorService';
 import { getConnectionRequestsForMentor, getPendingSessionsForUser } from './services/notificationService';
+import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService } from './services/mentorshipService';
 
 const App: React.FC = () => {
     return (
@@ -361,6 +361,42 @@ const AppContent: React.FC = () => {
         }
     };
 
+    const handleUpdateSessionStatus = async (sessionId: number, newStatus: Session['status']) => {
+    try {
+        // 1. Llamada a Supabase
+        const success = await updateSessionService(sessionId, newStatus);
+
+        if (!success) {
+            addToast('No se pudo actualizar el estado de la sesión.', 'error');
+            return;
+        }
+
+        // 2. Actualizar estado local de Notificaciones (pendingSessions)
+        // Removemos la sesión de la lista de pendientes porque ya fue procesada
+        setPendingSessions(prev => prev.filter(s => s.id !== sessionId));
+
+        // 3. Actualizar estado local del Dashboard (mentorships)
+        // Para que cuando la mentora vaya al dashboard, la sesión salga como 'confirmed' o 'cancelled'
+        setMentorships(prev => prev.map(m => ({
+            ...m,
+            sessions: m.sessions.map(s => 
+                s.id === sessionId ? { ...s, status: newStatus } : s
+            )
+        })));
+
+        // 4. Feedback al usuario
+        if (newStatus === 'confirmed') {
+            addToast('Sesión confirmada. Se ha notificado a la mentoreada.', 'success');
+        } else if (newStatus === 'cancelled') {
+            addToast('Solicitud de sesión rechazada.', 'info');
+        }
+
+    } catch (error) {
+        console.error("Error updating session:", error);
+        addToast('Ocurrió un error al procesar la solicitud.', 'error');
+    }
+};
+
     const updateMentorMaxMentees = async (mentorId: string | number, maxMentees: number) => {
         // Optimistic update
         setMentors(prev => prev.map(m => m.id === mentorId ? { ...m, maxMentees } : m));
@@ -472,7 +508,7 @@ const AppContent: React.FC = () => {
                             <NotificationsPage
                                 sessions={pendingSessions}
                                 connectionRequests={connectionRequests}
-                                updateSessionStatus={() => { }}
+                                updateSessionStatus={handleUpdateSessionStatus} 
                                 updateConnectionStatus={updateConnectionStatus}
                             />
                         } />
