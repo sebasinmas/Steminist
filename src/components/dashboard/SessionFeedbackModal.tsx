@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Button from '../common/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 
 interface SessionFeedbackModalProps {
     isOpen: boolean;
@@ -13,7 +14,7 @@ const SessionFeedbackModal: React.FC<SessionFeedbackModalProps> = ({ isOpen, onC
     const [rating, setRating] = useState<number>(0);
     const [comment, setComment] = useState<string>('');
     const [hoveredRating, setHoveredRating] = useState<number>(0);
-
+    const {addToast} = useToast();
     if (!isOpen) return null;
 
     const handleSubmit = async () => {
@@ -22,6 +23,7 @@ const SessionFeedbackModal: React.FC<SessionFeedbackModalProps> = ({ isOpen, onC
         // Reset state
         setRating(0);
         setComment('');
+        addToast('Feedback enviado. ¡Gracias por tu opinión!', 'success');
         onClose();
     };
 

@@ -26,7 +26,7 @@ import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './s
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 import { mentorService } from './services/mentorService';
 import { getConnectionRequestsForMentor, getPendingSessionsForUser } from './services/notificationService';
-import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService, completeSessionWithSurvey } from './services/mentorshipService';
+import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService, completeSessionWithSurvey, submitSessionFeedback } from './services/mentorshipService';
 import { mentorshipAdminService } from './services/mentorshipAdminService';
 
 const App: React.FC = () => {
@@ -326,11 +326,11 @@ const AppContent: React.FC = () => {
     };
 
 
-   const addSession = async (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
+    const addSession = async (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
         try {
 
             const currentMentorship = mentorships.find(m => m.id === mentorshipId);
-  
+
             const nextSessionNumber = (currentMentorship?.sessions.length || 0) + 1;
 
             const scheduledAt = `${newSession.date}T${newSession.time}:00`;
@@ -339,7 +339,7 @@ const AppContent: React.FC = () => {
                 .from('sessions')
                 .insert([{
                     mentorship_id: mentorshipId,
-                    session_number: nextSessionNumber, 
+                    session_number: nextSessionNumber,
                     scheduled_at: scheduledAt,
                     duration_minutes: newSession.duration,
                     topic: newSession.topic,
@@ -360,7 +360,7 @@ const AppContent: React.FC = () => {
 
             const createdSession: Session = {
                 id: data.id,
-                sessionNumber: data.session_number, 
+                sessionNumber: data.session_number,
                 date: newSession.date,
                 time: newSession.time,
                 duration: data.duration_minutes,
@@ -574,6 +574,31 @@ const AppContent: React.FC = () => {
         return <MentorProfilePage mentor={mentor} connectionStatus={connectionStatus} onSendConnectionRequest={sendConnectionRequest} />;
     };
 
+    const handleMenteeFeedback = async (sessionId: number, rating: number, comment: string) => {
+        try {
+            const success = await submitSessionFeedback(sessionId, rating, comment);
+
+            if (success) {
+                addToast('¡Gracias por tu feedback!', 'success');
+
+                // Actualizamos el estado local para reflejar que la sesión ya tiene feedback
+                // Esto hará que el botón "Calificar" desaparezca inmediatamente
+                setMentorships(prev => prev.map(m => ({
+                    ...m,
+                    sessions: m.sessions.map(s =>
+                        s.id === sessionId
+                            ? { ...s, rating: rating, feedback: comment, hasFeedback: true } // Actualizamos la sesión específica
+                            : s
+                    )
+                })));
+            } else {
+                addToast('No se pudo enviar el feedback. Intenta de nuevo.', 'error');
+            }
+        } catch (error) {
+            console.error("Error en handleMenteeFeedback:", error);
+            addToast('Ocurrió un error inesperado.', 'error');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background font-sans text-foreground transition-colors duration-300">
@@ -604,6 +629,7 @@ const AppContent: React.FC = () => {
                                     addSurveyToSession={addSurveyToSession}
                                     requestMentorshipTermination={requestMentorshipTermination}
                                     submitSupportTicket={submitSupportTicket}
+                                    onSubmitSessionFeedback={handleMenteeFeedback}
                                 />
                         } />
                         <Route path="/discover" element={<MentorSearchPage mentors={mentors} />} />
