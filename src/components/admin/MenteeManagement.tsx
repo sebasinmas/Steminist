@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Mentee } from '../../types';
 import Card from '../common/Card';
+import { Avatar } from '../common/Avatar';
 
 interface MenteeWithStats {
     mentee: Mentee;
@@ -15,16 +16,16 @@ interface MenteeManagementProps {
 
 const MenteeManagement: React.FC<MenteeManagementProps> = ({ menteesWithStats, onViewDetails }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     const filteredMentees = useMemo(() => {
-        return menteesWithStats.filter(({ mentee }) => 
+        return menteesWithStats.filter(({ mentee }) =>
             mentee.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [menteesWithStats, searchTerm]);
 
     return (
         <div>
-             <div className="mb-4">
+            <div className="mb-4">
                 <input
                     type="text"
                     placeholder="Buscar mentoreada por nombre..."
@@ -37,13 +38,13 @@ const MenteeManagement: React.FC<MenteeManagementProps> = ({ menteesWithStats, o
                 <div className="max-h-[70vh] overflow-y-auto">
                     <ul className="divide-y divide-border">
                         {filteredMentees.map(({ mentee, active, completed }) => (
-                            <li 
-                                key={mentee.id} 
+                            <li
+                                key={mentee.id}
                                 className="p-4 flex items-center justify-between hover:bg-accent/50 transition-colors cursor-pointer"
                                 onClick={() => onViewDetails(mentee)}
                             >
                                 <div className="flex items-center space-x-4">
-                                    <img src={mentee.avatarUrl} alt={mentee.name} className="w-12 h-12 rounded-full" />
+                                    <Avatar src={mentee.avatarUrl} alt={mentee.name} className="w-12 h-12" />
                                     <div>
                                         <p className="font-bold">{mentee.name}</p>
                                         <p className="text-sm text-muted-foreground">{mentee.title || 'Estudiante'}</p>

@@ -2,6 +2,7 @@ import React from 'react';
 import type { Mentor } from '../../types';
 import Card from '../common/Card';
 import Tag from '../common/Tag';
+import { Avatar } from '../common/Avatar';
 
 interface MentorProfileDetailsProps {
     mentor: Mentor;
@@ -11,7 +12,7 @@ const MentorProfileDetails: React.FC<MentorProfileDetailsProps> = ({ mentor }) =
     return (
         <div className="space-y-6">
             <Card className="text-center p-6">
-                <img src={mentor.avatarUrl} alt={mentor.name} className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-primary/20" />
+                <Avatar src={mentor.avatarUrl} alt={mentor.name} className="w-24 h-24 mx-auto mb-4 border-4 border-primary/20" />
                 <h2 className="text-xl font-bold">{mentor.name}</h2>
                 <p className="text-md text-muted-foreground mb-1">{mentor.title}</p>
                 <p className="text-sm text-muted-foreground mb-4">{mentor.company}</p>

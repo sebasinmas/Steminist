@@ -49,7 +49,7 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                 last_name: item.mentor.last_name,
                 email: item.mentor.email,
                 role: 'mentor',
-                avatarUrl: item.mentor.avatar_url || '',
+                avatarUrl: item.mentor.avatar_url || null,
                 interests: [], // Not fetched to optimize
                 availability: {}, // Not fetched
                 title: mentorProfile.title || '',

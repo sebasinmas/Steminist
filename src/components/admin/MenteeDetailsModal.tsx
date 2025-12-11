@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Mentee, Mentorship } from '../../types';
 import { XIcon, BriefcaseIcon, CheckCircleIcon, ClockIcon, StarIcon, XCircleIcon } from '../common/Icons';
+import { Avatar } from '../common/Avatar';
 
 interface MenteeDetailsModalProps {
     mentee: Mentee | null;
@@ -47,7 +48,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                 </button>
 
                 <div className="flex flex-col items-center text-center pb-6 border-b border-border">
-                    <img src={mentee.avatarUrl} alt={mentee.name} className="w-24 h-24 rounded-full mb-4" />
+                    <Avatar src={mentee.avatarUrl} alt={mentee.name} className="w-24 h-24 mb-4" />
                     <h2 className="text-3xl font-bold">{mentee.name}</h2>
                     <p className="text-lg text-primary">{mentee.title || 'Estudiante'}</p>
                     <p className="text-md text-muted-foreground">{mentee.company || 'Universidad de Washington'}</p>
@@ -80,7 +81,7 @@ const MenteeDetailsModal: React.FC<MenteeDetailsModalProps> = ({ mentee, mentors
                             menteeMentorships.map(m => (
                                 <div key={m.id} className="bg-secondary p-3 rounded-lg flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
-                                        <img src={m.mentor.avatarUrl} alt={m.mentor.name} className="w-10 h-10 rounded-full" />
+                                        <Avatar src={m.mentor.avatarUrl} alt={m.mentor.name} className="w-10 h-10" />
                                         <div>
                                             <p className="font-semibold">{m.mentor.name}</p>
                                             <p className="text-sm text-muted-foreground">Mentora | Inicio: {new Date(m.startDate).toLocaleDateString('es-ES')}</p>

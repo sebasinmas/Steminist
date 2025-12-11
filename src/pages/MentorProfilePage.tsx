@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { connectionService } from '../services/connectionService';
 import { useEffect } from 'react';
+import { Avatar } from '../components/common/Avatar';
 
 interface MentorProfilePageProps {
     mentor: Mentor;
@@ -63,7 +64,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, connectio
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div className="lg:col-span-1">
                     <div className="sticky top-28 bg-card p-8 rounded-lg border border-border text-center">
-                        <img src={mentor.avatarUrl} alt={mentor.name} className="w-40 h-40 rounded-full mx-auto mb-4" />
+                        <Avatar src={mentor.avatarUrl} alt={mentor.name} className="w-40 h-40 mx-auto mb-4" />
                         <h1 className="text-3xl font-bold">{mentor.name}</h1>
                         <p className="text-lg text-primary">{mentor.title}</p>
                         <p className="text-md text-muted-foreground mb-4">{mentor.company}</p>

@@ -3,6 +3,7 @@ import type { SupportTicket } from '../../types';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import { useToast } from '../../context/ToastContext';
+import { Avatar } from '../common/Avatar';
 
 interface SupportTicketCardProps {
     ticket: SupportTicket;
@@ -11,7 +12,7 @@ interface SupportTicketCardProps {
 
 const SupportTicketCard: React.FC<SupportTicketCardProps> = ({ ticket, onUpdateStatus }) => {
     const { addToast } = useToast();
-    
+
     const handleResolve = () => {
         onUpdateStatus(ticket.id, 'resolved');
         addToast(`Consulta de ${ticket.user.name} marcada como resuelta.`, 'success');
@@ -21,7 +22,7 @@ const SupportTicketCard: React.FC<SupportTicketCardProps> = ({ ticket, onUpdateS
         <Card>
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center space-x-3">
-                    <img src={ticket.user.avatarUrl} alt={ticket.user.name} className="w-10 h-10 rounded-full" />
+                    <Avatar src={ticket.user.avatarUrl} alt={ticket.user.name} className="w-10 h-10" />
                     <div>
                         <p className="font-bold">{ticket.user.name}</p>
                         <p className="text-sm text-muted-foreground">
@@ -29,7 +30,7 @@ const SupportTicketCard: React.FC<SupportTicketCardProps> = ({ ticket, onUpdateS
                         </p>
                     </div>
                 </div>
-                 <Button size="sm" onClick={handleResolve}>Marcar como Resuelto</Button>
+                <Button size="sm" onClick={handleResolve}>Marcar como Resuelto</Button>
             </div>
             <div>
                 <h4 className="font-semibold text-md mb-1">{ticket.subject}</h4>
