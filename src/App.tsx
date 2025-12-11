@@ -26,6 +26,8 @@ import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './s
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 import { mentorService } from './services/mentorService';
 import { getConnectionRequestsForMentor, getPendingSessionsForUser } from './services/notificationService';
+import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService, completeSessionWithSurvey } from './services/mentorshipService';
+
 import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService } from './services/mentorshipService';
 import { mentorshipAdminService } from './services/mentorshipAdminService';
 
@@ -208,11 +210,37 @@ const AppContent: React.FC = () => {
         setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, sessions: m.sessions.map(s => s.id === sessionId ? { ...s, attachments: [...(s.attachments || []), attachment] } : s) } : m));
     };
 
-    const addSurveyToSession = (mentorshipId: number, sessionId: number, survey: MentorSurvey) => {
-        updateMentorshipSession(mentorshipId, sessionId, { mentorSurvey: survey, status: 'completed' });
-        const mentorship = mentorships.find(m => m.id === mentorshipId);
-        if (mentorship && mentorship.sessions.length === 3 && mentorship.sessions.every(s => s.status === 'completed' || s.id === sessionId)) {
-            setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, status: 'completed' } : m));
+    const addSurveyToSession = async (mentorshipId: number, sessionId: number, survey: MentorSurvey) => {
+        if (!user) return;
+
+        try {
+            // 1. Llamada a Supabase
+            const success = await completeSessionWithSurvey(sessionId, user.id, survey);
+
+            if (!success) {
+                addToast('Error al guardar la encuesta. Inténtalo de nuevo.', 'error');
+                return;
+            }
+
+            setMentorships(prev => prev.map(m => {
+                if (m.id === mentorshipId) {
+                    const updatedSessions = m.sessions.map(s => 
+                        s.id === sessionId 
+                            ? { ...s, status: 'completed' as const, mentorSurvey: survey } 
+                            : s
+                    );
+                    
+                    // Lógica opcional: Si todas las sesiones (ej. 3) están completas, 
+                    // podrías marcar la mentoría como completada aquí también si tu lógica lo requiere.
+                    
+                    return { ...m, sessions: updatedSessions };
+                }
+                return m;
+            }));
+
+        } catch (error) {
+            console.error("Error in addSurveyToSession:", error);
+            addToast('Ocurrió un error inesperado.', 'error');
         }
     };
 
