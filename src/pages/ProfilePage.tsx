@@ -11,6 +11,7 @@ import { useToast } from '../context/ToastContext';
 import { useProfileOptions } from '../hooks/useProfileOptions';
 import { supabase } from '../lib/supabase';
 import { storageService } from '@/services/storageService';
+import { Avatar } from '@/components/common/Avatar';
 
 interface ProfilePageProps {
     isPublicView?: boolean;
@@ -382,7 +383,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
             setIsEditing(false);
             // Limpiamos el archivo seleccionado después de guardar con éxito
-            setSelectedFile(null); 
+            setSelectedFile(null);
             addToast('Perfil actualizado con éxito.', 'success');
 
         } catch (rawErr) {
@@ -548,7 +549,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                 <div className="lg:col-span-1">
                     <div className="sticky top-28 bg-card p-8 rounded-lg border border-border text-center">
                         <div className="relative w-40 h-40 mx-auto mb-4 group">
-                            <img
+                            <Avatar
                                 src={profileData.avatarUrl}
                                 alt={profileData.name}
                                 className="w-40 h-40 rounded-full object-cover"
