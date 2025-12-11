@@ -15,6 +15,7 @@ import TerminationRequestModal from '../components/dashboard/TerminationRequestM
 import HelpCenterCard from '../components/dashboard/HelpCenterCard';
 import ContactSupportModal from '../components/dashboard/ContactSupportModal';
 import { useToast } from '../context/ToastContext';
+import SessionFeedbackModal from '@/components/dashboard/SessionFeedbackModal';
 
 interface DashboardPageProps {
     mentorships: Mentorship[];
@@ -24,6 +25,7 @@ interface DashboardPageProps {
     addSurveyToSession: (mentorshipId: number, sessionId: number, survey: MentorSurvey) => void;
     requestMentorshipTermination: (mentorshipId: number, reasons: string[], details: string) => void;
     submitSupportTicket: (subject: string, message: string) => Promise<void>;
+    onSubmitSessionFeedback?: (sessionId: number, rating: number, comment: string) => Promise<void>;
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = (props) => {
@@ -54,6 +56,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
     const activeMentorships = useMemo(() => myMentorships.filter(m => m.status === 'active'), [myMentorships]);
     const [selectedMentorship, setSelectedMentorship] = useState<Mentorship | null>(null);
     const [terminatingMentorship, setTerminatingMentorship] = useState<Mentorship | null>(null);
+    const [sessionForFeedback, setSessionForFeedback] = useState<Session | null>(null);
 
     useEffect(() => {
         if (isMentor) {
@@ -124,7 +127,16 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
             <Button variant="secondary" onClick={() => navigate('/profile')}>Actualizar Mi Perfil</Button>
         </Card>
     );
+    const handleOpenFeedback = (session: Session) => {
+        setSessionForFeedback(session);
+    };
 
+    const handleFeedbackSubmit = async (rating: number, comment: string) => {
+        if (sessionForFeedback && props.onSubmitSessionFeedback) {
+            await props.onSubmitSessionFeedback(sessionForFeedback.id, rating, comment);
+            setSessionForFeedback(null);
+        }
+    };
 
     if (isMentor) {
         return (
@@ -145,6 +157,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                                     onAddAttachment={props.addAttachmentToSession}
                                     onCompleteSession={handleOpenSurvey}
                                     onShowTerminationModal={() => setTerminatingMentorship(selectedMentorship)}
+                                    onLeaveFeedback={()=>{}}
                                 />
                             ) : activeMentorships.length > 0 ? (
                                 <Card><div className="text-center py-8"><h3 className="text-xl font-semibold">Bienvenida a tu panel</h3><p className="text-muted-foreground mt-2">Selecciona una mentoreada de la lista para ver los detalles.</p></div></Card>
@@ -197,6 +210,7 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                                 onAddAttachment={props.addAttachmentToSession}
                                 onCompleteSession={handleOpenSurvey}
                                 onShowTerminationModal={() => setTerminatingMentorship(m)}
+                                onLeaveFeedback={handleOpenFeedback}
                             />
                         ))
                     ) : (
@@ -229,6 +243,13 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
             </div>
             {activeMentorshipForScheduling && (<SchedulingModal mentor={activeMentorshipForScheduling.mentor} isOpen={isScheduling} onClose={() => setIsScheduling(false)} onSessionBook={handleSessionBooked} />)}
             {terminatingMentorship && (<TerminationRequestModal isOpen={!!terminatingMentorship} onClose={() => setTerminatingMentorship(null)} onSubmit={handleTerminationRequest} mentorship={terminatingMentorship} />)}
+            {sessionForFeedback && (
+                <SessionFeedbackModal 
+                    isOpen={!!sessionForFeedback}
+                    onClose={() => setSessionForFeedback(null)}
+                    onSubmit={handleFeedbackSubmit}
+                />
+            )}
             <ContactSupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} onSubmit={handleSubmitSupportTicket} />
         </div>
     );

@@ -4,7 +4,7 @@ import type { Mentorship, Session, Attachment } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../common/Card';
 import Button from '../common/Button';
-import { CalendarIcon, ClockIcon, CheckCircleIcon } from '../common/Icons';
+import { CalendarIcon, ClockIcon, CheckCircleIcon, StarIcon } from '../common/Icons';
 import { Avatar } from '../common/Avatar';
 
 interface MentorshipProgressProps {
@@ -14,9 +14,10 @@ interface MentorshipProgressProps {
     onAddAttachment: (mentorshipId: number, sessionId: number, attachment: Attachment) => void;
     onCompleteSession: (mentorshipId: number, session: Session) => void;
     onShowTerminationModal: () => void;
+    onLeaveFeedback: (session: Session) => void;
 }
 
-const MentorshipProgress: React.FC<MentorshipProgressProps> = ({ mentorship, onScheduleSession, onUpdateSession, onAddAttachment, onCompleteSession, onShowTerminationModal }) => {
+const MentorshipProgress: React.FC<MentorshipProgressProps> = ({ mentorship, onScheduleSession, onUpdateSession, onAddAttachment, onCompleteSession, onShowTerminationModal, onLeaveFeedback }) => {
     const { role } = useAuth();
     const navigate = useNavigate();
     const isMentor = role === 'mentor';
@@ -42,7 +43,7 @@ const MentorshipProgress: React.FC<MentorshipProgressProps> = ({ mentorship, onS
         let statusText = 'Por Agendar';
         if (isCompleted) statusText = 'Completada';
         else if (isConfirmed) statusText = 'Agendada';
-
+        const showRateButton = !isMentor && isCompleted && session && !session.hasFeedback;
         return (
             <div className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 ${isCompleted ? 'bg-green-500' : isNext ? 'bg-primary' : 'bg-border'}`}>
@@ -52,6 +53,17 @@ const MentorshipProgress: React.FC<MentorshipProgressProps> = ({ mentorship, onS
                     <h4 className="font-semibold">Sesión {sessionNumber}</h4>
                     <p className="text-sm text-muted-foreground">{statusText}</p>
                 </div>
+                {showRateButton && (
+                    <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-xs text-primary hover:text-primary/80 hover:bg-primary/10 ml-2"
+                        onClick={() => onLeaveFeedback(session)}
+                    >
+                        <StarIcon className="w-3 h-3 mr-1" />
+                        Calificar
+                    </Button>
+                )}
             </div>
         );
     };
