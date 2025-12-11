@@ -201,7 +201,7 @@ const AppContent: React.FC = () => {
         }
     };
 
-    const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'rejected') => {
+    const updateConnectionStatus = async (requestId: number, newStatus: 'accepted' | 'rejected' | 'pending_mentor') => {
         try {
             // Llamada a la RPC (Función de Base de Datos)
             const { data, error } = await supabase.rpc('handle_connection_request', {
@@ -214,7 +214,7 @@ const AppContent: React.FC = () => {
             // Actualizar UI: Remover de solicitudes pendientes
             setConnectionRequests(prev => prev.filter(r => r.id !== requestId));
 
-            if (newStatus === 'accepted') {
+            if (newStatus === 'pending_mentor') {
                 const request = connectionRequests.find(r => r.id === requestId);
 
                 if (request && data.mentorship_id) {

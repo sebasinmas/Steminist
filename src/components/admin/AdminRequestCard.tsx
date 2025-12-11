@@ -6,7 +6,7 @@ import { useToast } from '../../context/ToastContext';
 
 interface AdminRequestCardProps {
     request: ConnectionRequest;
-    onStatusChange: (requestId: number, newStatus: 'accepted' | 'rejected') => void;
+    onStatusChange: (requestId: number, newStatus: 'accepted' | 'rejected' | 'pending_mentor') => void;
     mentorCurrentMentees: number;
 }
 
@@ -16,7 +16,7 @@ const AdminRequestCard: React.FC<AdminRequestCardProps> = ({ request, onStatusCh
     const { addToast } = useToast();
 
     const handleApprove = () => {
-        onStatusChange(request.id, 'accepted');
+        onStatusChange(request.id, 'pending_mentor');
     };
 
     const handleDecline = () => {
