@@ -298,14 +298,67 @@ const AppContent: React.FC = () => {
         }
     };
 
-    const addSession = (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
-        setMentorships(prev => prev.map(m => {
-            if (m.id === mentorshipId && m.sessions.length < 3) {
-                const newSessionWithId: Session = { ...newSession, id: Date.now(), sessionNumber: m.sessions.length + 1 };
-                return { ...m, sessions: [...m.sessions, newSessionWithId] };
-            }
-            return m;
-        }));
+
+    const addSession = async (mentorshipId: number, newSession: Omit<Session, 'id' | 'sessionNumber'>) => {
+        try {
+   
+            const scheduledAt = `${newSession.date}T${newSession.time}:00`;
+
+            const { data, error } = await supabase
+                .from('sessions')
+                .insert([{
+                    mentorship_id: mentorshipId,
+                    scheduled_at: scheduledAt,
+                    duration_minutes: newSession.duration,
+                    topic: newSession.topic,
+                    mentee_goals: newSession.menteeGoals,
+                    status: 'pending' 
+                }])
+                .select(`
+                    *,
+                    mentorship:mentorships (
+                        mentor:users!mentor_id (id, first_name, last_name, avatar_url, email),
+                        mentee:users!mentee_id (id, first_name, last_name, avatar_url, email)
+                    )
+                `)
+                .single();
+
+            if (error) throw error;
+
+
+            const createdSession: Session = {
+                id: data.id,
+                sessionNumber: data.session_number || 0, 
+                date: newSession.date,
+                time: newSession.time,
+                duration: data.duration_minutes,
+                status: 'pending',
+                topic: data.topic,
+                menteeGoals: data.mentee_goals,
+                mentor: data.mentorship?.mentor,
+                mentee: data.mentorship?.mentee
+            };
+
+   
+            setMentorships(prev => prev.map(m => {
+                if (m.id === mentorshipId) {
+            
+                    const sessionNumber = (m.sessions?.length || 0) + 1;
+                    const sessionWithNumber = { ...createdSession, sessionNumber };
+                    
+                    return { ...m, sessions: [...m.sessions, sessionWithNumber] };
+                }
+                return m;
+            }));
+
+            setPendingSessions(prev => [...prev, createdSession]);
+
+            addToast('Solicitud de sesión enviada exitosamente.', 'success');
+
+        } catch (error: any) {
+            console.error("Error creating session:", error);
+            addToast(`Error al agendar la sesión: ${error.message}`, 'error');
+        }
     };
 
     const updateMentorMaxMentees = async (mentorId: string | number, maxMentees: number) => {
