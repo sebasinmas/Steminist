@@ -10,6 +10,7 @@ import AvailabilityCalendarModal from '../components/scheduling/AvailabilityCale
 import { useToast } from '../context/ToastContext';
 import { useProfileOptions } from '../hooks/useProfileOptions';
 import { supabase } from '../lib/supabase';
+import { storageService } from '@/services/storageService';
 
 interface ProfilePageProps {
     isPublicView?: boolean;
@@ -23,6 +24,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const { addToast } = useToast();
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     const {
         interests: interestOptions,
         mentorshipGoals: goalOptions,
@@ -61,6 +64,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setSelectedFile(file);
             const reader = new FileReader();
             reader.onload = event => {
                 if (event.target?.result) {
@@ -271,19 +276,28 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
         try {
             const userId = user.id;
-            // Leer directamente nombre y apellido separados desde profileData o desde user
-            const avatarUrl = (profileData as any).avatarUrl;
+            let finalAvatarUrl = (profileData as any).avatarUrl;
+
+            // --- PASO CRÍTICO: Subir imagen real si existe un archivo seleccionado ---
+            if (selectedFile) {
+                console.log("Subiendo imagen al Storage...");
+                // Subimos el archivo y obtenemos la URL limpia de Supabase
+                finalAvatarUrl = await storageService.uploadAvatar(userId, selectedFile);
+            }
+            // -------------------------------------------------------------------------
+
+            // Preparar nombres
             const firstName =
                 (profileData as any).first_name ?? (user as any).first_name ?? '';
             const lastName =
                 (profileData as any).last_name ?? (user as any).last_name ?? '';
 
-            // 1) Actualizar users
+            // 1) Actualizar tabla 'users' con la URL correcta (no el base64)
             console.log('[ProfilePage] Updating users row', {
                 userId,
                 firstName,
                 lastName,
-                avatarUrl,
+                avatarUrl: finalAvatarUrl,
             });
 
             const { data: usersData, error: userErr } = await supabase
@@ -291,22 +305,17 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                 .update({
                     first_name: firstName || null,
                     last_name: lastName || null,
-                    avatar_url: avatarUrl || null,
+                    avatar_url: finalAvatarUrl || null,
                 })
                 .eq('id', userId)
                 .select();
-
-            console.log('[ProfilePage] users update resolved', {
-                usersData,
-                userErr,
-            });
 
             if (userErr) {
                 console.error('[ProfilePage] Error updating users', userErr);
                 throw userErr;
             }
 
-            // 2) Actualizar perfil extendido
+            // 2) Actualizar perfil extendido según el rol
             if (isMentor) {
                 const mentor = profileData as Mentor;
 
@@ -316,7 +325,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                     company: mentor.company,
                 });
 
-                // Construir objeto de updates sin pisar expertise si no viene definido
                 const mentorUpdates: any = {
                     title: mentor.title || null,
                     company: mentor.company || null,
@@ -326,21 +334,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                     paper_link: (mentor as any).paperLink || null,
                 };
 
-                // Solo actualizar expertise si existe explícitamente en profileData
                 if (typeof (mentor as any).expertise !== 'undefined') {
                     mentorUpdates.expertise = (mentor as any).expertise || null;
                 }
 
-                const { data: mentorData, error: mentorErr } = await supabase
+                const { error: mentorErr } = await supabase
                     .from('mentor_profiles')
                     .update(mentorUpdates)
-                    .eq('user_id', userId)
-                    .select();
-
-                console.log('[ProfilePage] mentor_profiles update resolved', {
-                    mentorData,
-                    mentorErr,
-                });
+                    .eq('user_id', userId);
 
                 if (mentorErr) {
                     console.error('[ProfilePage] Error updating mentor_profiles', mentorErr);
@@ -355,7 +356,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                     company: mentee.company,
                 });
 
-                const { data: menteeData, error: menteeErr } = await supabase
+                const { error: menteeErr } = await supabase
                     .from('mentee_profiles')
                     .update({
                         title: mentee.title || null,
@@ -367,13 +368,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                         is_neurodivergent: !!mentee.neurodivergence,
                         neurodivergence_details: mentee.neurodivergence || null,
                     })
-                    .eq('user_id', userId)
-                    .select();
-
-                console.log('[ProfilePage] mentee_profiles update resolved', {
-                    menteeData,
-                    menteeErr,
-                });
+                    .eq('user_id', userId);
 
                 if (menteeErr) {
                     console.error('[ProfilePage] Error updating mentee_profiles', menteeErr);
@@ -381,56 +376,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                 }
             }
 
-            // 3) Actualizar papers (publicaciones y enlaces) solo para mentoras
-            if (isMentor) {
-                const mentor = profileData as Mentor;
-                const links = mentor.links || [];
-
-                console.log('[ProfilePage] Updating papers rows', {
-                    userId,
-                    links,
-                });
-
-                // Borrar papers anteriores de esta usuaria
-                const { error: delPapersErr } = await supabase
-                    .from('papers')
-                    .delete()
-                    .eq('user_id', userId);
-
-                if (delPapersErr) {
-                    console.error('[ProfilePage] Error deleting old papers', delPapersErr);
-                    throw delPapersErr;
-                }
-
-                // Insertar nuevos papers si hay enlaces
-                if (links.length > 0) {
-                    const rowsToInsert = links.map(link => ({
-                        user_id: userId,
-                        title: link.title || null,
-                        link: link.url || null,
-                    }));
-
-                    const { error: insPapersErr } = await supabase
-                        .from('papers')
-                        .insert(rowsToInsert);
-
-                    if (insPapersErr) {
-                        console.error('[ProfilePage] Error inserting papers', insPapersErr);
-                        throw insPapersErr;
-                    }
-                }
-
-                console.log('[ProfilePage] papers updated successfully');
-            }
-
             console.log('[ProfilePage] Calling refreshUser');
             await refreshUser();
             console.log('[ProfilePage] refreshUser done');
 
             setIsEditing(false);
+            // Limpiamos el archivo seleccionado después de guardar con éxito
+            setSelectedFile(null); 
             addToast('Perfil actualizado con éxito.', 'success');
 
-            console.log('[ProfilePage] handleSave completed successfully');
         } catch (rawErr) {
             const err = rawErr as any;
             console.error('[ProfilePage] Error in handleSave', err);
@@ -442,7 +396,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
 
             addToast(message, 'error');
         } finally {
-            console.log('[ProfilePage] handleSave finally → setSaving(false)');
             setSaving(false);
         }
     };

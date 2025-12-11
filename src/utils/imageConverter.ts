@@ -1,14 +1,33 @@
 export const convertToWebP = (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    // Crear URL temporal
     const objectUrl = URL.createObjectURL(file);
     img.src = objectUrl;
 
     img.onload = () => {
+      // --- LÓGICA DE REDIMENSIONAMIENTO ---
+      const MAX_WIDTH = 300; // Suficiente para un avatar
+      const MAX_HEIGHT = 300;
+      let width = img.width;
+      let height = img.height;
+
+      // Mantener proporción
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+      // ------------------------------------
+
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = width;
+      canvas.height = height;
 
       const ctx = canvas.getContext('2d');
       if (!ctx) {
@@ -17,18 +36,16 @@ export const convertToWebP = (file: File): Promise<Blob> => {
         return;
       }
 
-      // Dibujar imagen
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, width, height); // Dibujar con nuevas dimensiones
 
-      // Convertir a Blob (WebP)
       canvas.toBlob(
         (blob) => {
-          URL.revokeObjectURL(objectUrl); // Limpiar memoria
+          URL.revokeObjectURL(objectUrl);
           if (blob) resolve(blob);
           else reject(new Error('Error al convertir la imagen a WebP'));
         },
         'image/webp',
-        0.8 // Calidad (0 a 1)
+        0.8
       );
     };
 
