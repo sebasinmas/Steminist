@@ -41,7 +41,8 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
 
         return data.map((item: any) => {
             // Map Mentor
-            const mentorProfile = item.mentor.mentor_profiles?.[0] || {};
+            const mentorProfileData = item.mentor.mentor_profiles;
+            const mentorProfile = Array.isArray(mentorProfileData) ? mentorProfileData[0] : (mentorProfileData || {});
             const mentor: Mentor = {
                 id: item.mentor.id,
                 name: `${item.mentor.first_name || ''} ${item.mentor.last_name || ''}`.trim(),
@@ -58,7 +59,7 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                 reviews: mentorProfile.total_reviews || 0,
                 longBio: mentorProfile.bio || '',
                 mentorshipGoals: [], // Not fetched
-                maxMentees: mentorProfile.max_mentees || 0,
+                maxMentees: mentorProfile.max_mentees || 3,
             };
 
             // Map Mentee

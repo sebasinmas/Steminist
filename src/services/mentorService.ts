@@ -123,41 +123,46 @@ export const mentorService = {
         }
 
         // Mapeo de datos DB a tipos de Frontend
-        return (data || []).map((m: any) => ({
-            id: m.id,
-            status: m.status,
-            startDate: m.start_date,
-            terminationReason: m.termination_reason,
-            sessions: [], // Las sesiones se cargarían aparte si fuera necesario
-            mentor: {
-                id: m.mentor.id,
-                name: `${m.mentor.first_name} ${m.mentor.last_name}`.trim(),
-                email: m.mentor.email,
-                avatarUrl: m.mentor.avatar_url || null,
-                role: 'mentor',
-                title: m.mentor.mentor_profiles?.[0]?.title || '',
-                company: m.mentor.mentor_profiles?.[0]?.company || '',
-                maxMentees: m.mentor.mentor_profiles?.[0]?.max_mentees || 3,
-                interests: m.mentor.mentor_profiles?.[0]?.interests || [],
-                // ... otros campos por defecto
-                rating: 0, reviews: 0, longBio: '', availability: {}, mentorshipGoals: []
-            },
-            mentee: {
-                id: m.mentee.id,
-                name: `${m.mentee.first_name} ${m.mentee.last_name}`.trim(),
-                email: m.mentee.email,
-                avatarUrl: m.mentee.avatar_url || null,
-                role: 'mentee',
-                title: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.title || '',
-                company: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.company || '',
-                bio: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.bio || '',
-                interests: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.interests || [],
-                mentorshipGoals: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.mentorship_goals || [],
-                pronouns: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.pronouns,
-                neurodivergence: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.neurodivergence_details,
-                availability: {}
-            }
-        })) as Mentorship[];
+        return (data || []).map((m: any) => {
+            const mentorProfile = Array.isArray(m.mentor.mentor_profiles) ? m.mentor.mentor_profiles[0] : m.mentor.mentor_profiles;
+            const menteeProfile = Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles;
+
+            return {
+                id: m.id,
+                status: m.status,
+                startDate: m.start_date,
+                terminationReason: m.termination_reason,
+                sessions: [], // Las sesiones se cargarían aparte si fuera necesario
+                mentor: {
+                    id: m.mentor.id,
+                    name: `${m.mentor.first_name} ${m.mentor.last_name}`.trim(),
+                    email: m.mentor.email,
+                    avatarUrl: m.mentor.avatar_url || null,
+                    role: 'mentor',
+                    title: mentorProfile?.title || '',
+                    company: mentorProfile?.company || '',
+                    maxMentees: mentorProfile?.max_mentees || 5,
+                    interests: mentorProfile?.interests || [],
+                    // ... otros campos por defecto
+                    rating: 0, reviews: 0, longBio: '', availability: {}, mentorshipGoals: []
+                },
+                mentee: {
+                    id: m.mentee.id,
+                    name: `${m.mentee.first_name} ${m.mentee.last_name}`.trim(),
+                    email: m.mentee.email,
+                    avatarUrl: m.mentee.avatar_url || null,
+                    role: 'mentee',
+                    title: menteeProfile?.title || '',
+                    company: menteeProfile?.company || '',
+                    bio: menteeProfile?.bio || '',
+                    interests: menteeProfile?.interests || [],
+                    mentorshipGoals: menteeProfile?.mentorship_goals || [],
+                    pronouns: menteeProfile?.pronouns,
+                    neurodivergence: menteeProfile?.neurodivergence_details,
+                    availability: {}
+                }
+            };
+        }) as Mentorship[];
     }
 };
 

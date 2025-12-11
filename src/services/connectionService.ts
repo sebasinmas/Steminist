@@ -67,45 +67,50 @@ export const connectionService = {
         if (error) throw error;
 
         // Mapear respuesta a tipo ConnectionRequest
-        return data.map((req: any) => ({
-            id: req.id,
-            status: req.status,
-            motivationLetter: req.motivation_letter,
-            mentee: {
-                id: req.mentee.id,
-                name: `${req.mentee.first_name} ${req.mentee.last_name}`.trim(),
-                avatarUrl: req.mentee.avatar_url,
-                title: req.mentee.mentee_profiles?.[0]?.title,
-                // Campos mínimos necesarios para la UI
-                email: req.mentee.email,
-                role: 'mentee',
-                interests: [],
-                availability: {},
-                bio: '',
-                mentorshipGoals: []
-            },
-            mentor: {
-                id: req.mentor.id,
-                name: `${req.mentor.first_name} ${req.mentor.last_name}`.trim(),
-                maxMentees: req.mentor.mentor_profiles?.[0]?.max_mentees || 3,
-                // Campos mínimos
-                email: req.mentor.email,
-                role: 'mentor',
-                avatarUrl: req.mentor.avatar_url,
-                interests: [],
-                availability: {},
-                title: req.mentor.mentor_profiles?.[0]?.title,
-                company: req.mentor.mentor_profiles?.[0]?.company,
-                rating: 0, reviews: 0, longBio: '', mentorshipGoals: []
-            }
-        })) as unknown as ConnectionRequest[];
+        return data.map((req: any) => {
+            const menteeProfile = Array.isArray(req.mentee.mentee_profiles) ? req.mentee.mentee_profiles[0] : req.mentee.mentee_profiles;
+            const mentorProfile = Array.isArray(req.mentor.mentor_profiles) ? req.mentor.mentor_profiles[0] : req.mentor.mentor_profiles;
+
+            return {
+                id: req.id,
+                status: req.status,
+                motivationLetter: req.motivation_letter,
+                mentee: {
+                    id: req.mentee.id,
+                    name: `${req.mentee.first_name} ${req.mentee.last_name}`.trim(),
+                    avatarUrl: req.mentee.avatar_url,
+                    title: menteeProfile?.title,
+                    // Campos mínimos necesarios para la UI
+                    email: req.mentee.email,
+                    role: 'mentee',
+                    interests: [],
+                    availability: {},
+                    bio: '',
+                    mentorshipGoals: []
+                },
+                mentor: {
+                    id: req.mentor.id,
+                    name: `${req.mentor.first_name} ${req.mentor.last_name}`.trim(),
+                    maxMentees: mentorProfile?.max_mentees || 3,
+                    // Campos mínimos
+                    email: req.mentor.email,
+                    role: 'mentor',
+                    avatarUrl: req.mentor.avatar_url,
+                    interests: [],
+                    availability: {},
+                    title: mentorProfile?.title,
+                    company: mentorProfile?.company,
+                    rating: 0, reviews: 0, longBio: '', mentorshipGoals: []
+                }
+            };
+        }) as unknown as ConnectionRequest[];
     },
 
     // Actualizar estado (Aceptar/Rechazar)
     updateRequestStatus: async (requestId: number, status: 'accepted' | 'rejected' | 'pending_mentor') => {
         const { data, error } = await supabase
             .from('connection_requests')
-            .update({ 
+            .update({
                 status: status,
                 responded_at: new Date().toISOString()
             })
