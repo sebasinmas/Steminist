@@ -11,12 +11,24 @@ interface AnalyticsChartsProps {
 
 const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ mentorships, mentors, mentorMenteesCount, menteeGoalsDistribution }) => {
 
-    const chartColors = ['rgb(var(--cyan))', 'rgb(var(--lilac))'];
+    const chartColors = [
+        'rgb(var(--cyan))',
+        'rgb(var(--lilac))',
+        'rgb(59 130 246)',   // azul
+        'rgb(244 114 182)',  // rosa
+        'rgb(234 179 8)',    // amarillo
+        'rgb(34 197 94)',    // verde
+        'rgb(249 115 22)',   // naranja
+        'rgb(147 51 234)',   // púrpura
+        'rgb(14 165 233)',   // celeste
+        'rgb(236 72 153)',   // fucsia
+        'rgb(107 114 128)'   // gris
+    ];
 
     const mentorshipStatusData = useMemo(() => {
         const statusCounts = mentorships.reduce((acc, m) => {
             const status = m.status === 'termination_requested' ? 'Terminación Solicitada' :
-                           m.status === 'active' ? 'Activas' : 'Completadas';
+                m.status === 'active' ? 'Activas' : 'Completadas';
             acc[status] = (acc[status] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
@@ -26,8 +38,8 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ mentorships, mentors,
             { name: 'Completadas', value: statusCounts['Completadas'] || 0 },
             { name: 'Terminación Solicitada', value: statusCounts['Terminación Solicitada'] || 0 }
         ]
-        .filter(d => d.value > 0)
-        .map(({ name, value }, i) => ({ label: name, value, color: chartColors[i % chartColors.length] }));
+            .filter(d => d.value > 0)
+            .map(({ name, value }, i) => ({ label: name, value, color: chartColors[i % chartColors.length] }));
     }, [mentorships]);
 
     const mentorCapacityData = useMemo(() => {
@@ -43,12 +55,12 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ mentorships, mentors,
             }
         });
         return [
-             { name: 'En Capacidad Máxima', value: capacityCounts.atCapacity },
-             { name: 'Con Mentoreadas', value: capacityCounts.withMentees },
-             { name: 'Totalmente Disponibles', value: capacityCounts.available }
+            { name: 'En Capacidad Máxima', value: capacityCounts.atCapacity },
+            { name: 'Con Mentoreadas', value: capacityCounts.withMentees },
+            { name: 'Totalmente Disponibles', value: capacityCounts.available }
         ]
-        .filter(d => d.value > 0)
-        .map(({ name, value }, i) => ({ label: name, value, color: chartColors[i % chartColors.length] }));
+            .filter(d => d.value > 0)
+            .map(({ name, value }, i) => ({ label: name, value, color: chartColors[i % chartColors.length] }));
     }, [mentors, mentorMenteesCount]);
 
     const menteeGoalsData = useMemo(() => {
