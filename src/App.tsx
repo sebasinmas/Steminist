@@ -26,7 +26,7 @@ import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './s
 import { fetchMentorships, fetchMentees } from './services/mentorshipService';
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 import { mentorService } from './services/mentorService';
-
+import { getPendingSessionsForUser } from './services/notificationService';
 
 const App: React.FC = () => {
     return (
@@ -56,7 +56,7 @@ const AppContent: React.FC = () => {
     // The entire application state (mock data) is managed here
     // In a real app, this would be handled by a more robust state management library or hooks like React Query
     const [theme, setTheme] = useState<Theme>('dark');
-    const [pendingSessions, setPendingSessions] = useState<Session[]>(mockPendingSessions);
+    const [pendingSessions, setPendingSessions] = useState<Session[]>([]);
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [mentees, setMentees] = useState<Mentee[]>([]);
     const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
@@ -99,6 +99,20 @@ const AppContent: React.FC = () => {
             }
         };
 
+        const loadPendingSessions = async () => {
+            if (isLoggedIn && user) {
+                try{
+                    setPendingSessions([]);
+                    const sessions = await getPendingSessionsForUser(String(user.id));
+                    setPendingSessions(sessions);
+                } catch (error) {
+                    console.error("Failed to fetch pending sessions:", error);
+                    console.warn("Using mock pending sessions due to error.");
+                    setPendingSessions(mockPendingSessions);
+                }
+            }
+        }
+        loadPendingSessions();
         loadMentors();
         loadSupportTickets();
         loadMentorships();
