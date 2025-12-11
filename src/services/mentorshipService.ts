@@ -29,7 +29,8 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                     notes,
                     created_at,
                     updated_at,
-                    session_feedback(id) 
+                    session_feedback(rating, comment),
+                    private_session_surveys(preparation, engagement, outcome, notes)
                 )
             `);
 
@@ -39,6 +40,13 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
         }
 
         if (!data) return [];
+
+        const mapScoreToQuality = (score: number): 'excellent' | 'good' | 'average' | 'poor' => {
+            if (score >= 4) return 'excellent';
+            if (score === 3) return 'good';
+            if (score === 2) return 'average';
+            return 'poor';
+        };
 
         return data.map((item: any) => {
             // Map Mentor
@@ -101,6 +109,23 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                     timeStr = `${hours}:${minutes}`;
                 }
 
+                // Map Session Feedback
+                const feedbackData = Array.isArray(session.session_feedback) ? session.session_feedback[0] : session.session_feedback;
+                const feedbackRating = feedbackData?.rating;
+                const feedbackComment = feedbackData?.comment;
+
+                // Map Mentor Survey
+                const surveyData = Array.isArray(session.private_session_surveys) ? session.private_session_surveys[0] : session.private_session_surveys;
+                let mentorSurvey: MentorSurvey | undefined = undefined;
+
+                if (surveyData) {
+                    mentorSurvey = {
+                        preparation: mapScoreToQuality(surveyData.preparation) as any, // Cast to match type
+                        engagement: mapScoreToQuality(surveyData.engagement) as any,
+                        outcome: surveyData.notes || surveyData.outcome || '', // 'notes' in DB maps to 'outcome' in frontend
+                    };
+                }
+
                 return {
                     id: session.id,
                     sessionNumber: index + 1, // Simple numbering
@@ -112,9 +137,10 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                     menteeGoals: session.mentee_goals || '',
                     mentor: mentor, // Link back to mentor
                     mentee: mentee, // Link back to mentee
-                    rating: 0, // Not in schema provided
-                    feedback: '', // Not in schema provided
-                    hasFeedback: session.session_feedback && session.session_feedback.length > 0,
+                    rating: feedbackRating,
+                    feedback: feedbackComment,
+                    hasFeedback: !!feedbackData,
+                    mentorSurvey: mentorSurvey,
                     video_link: session.video_link,
                     notes: session.notes,
                     created_at: session.created_at,

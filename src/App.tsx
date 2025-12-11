@@ -164,7 +164,7 @@ const AppContent: React.FC = () => {
             if (isLoggedIn) {
                 try {
                     // Cargar Mentorías (necesario para calcular capacidad de mentoras en admin)
-                    const realMentorships = await mentorService.fetchMentorships();
+                    const realMentorships = await fetchMentorships();
                     setMentorships(realMentorships);
 
                     // Cargar Solicitudes (solo si es admin, o podrías filtrar en backend por rol)
@@ -222,15 +222,15 @@ const AppContent: React.FC = () => {
 
             setMentorships(prev => prev.map(m => {
                 if (m.id === mentorshipId) {
-                    const updatedSessions = m.sessions.map(s => 
-                        s.id === sessionId 
-                            ? { ...s, status: 'completed' as const, mentorSurvey: survey } 
+                    const updatedSessions = m.sessions.map(s =>
+                        s.id === sessionId
+                            ? { ...s, status: 'completed' as const, mentorSurvey: survey }
                             : s
                     );
-                    
+
                     // Lógica opcional: Si todas las sesiones (ej. 3) están completas, 
                     // podrías marcar la mentoría como completada aquí también si tu lógica lo requiere.
-                    
+
                     return { ...m, sessions: updatedSessions };
                 }
                 return m;
