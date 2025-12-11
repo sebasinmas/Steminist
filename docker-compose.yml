@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+        VITE_SUPABASE_URL: "https://obezfnpcfmneonvcurkr.supabase.co/"
+        VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_j98t5G95R5B3OCSOEak6Og_wi-cvPJj"
     ports:
       - "3000:80"   # http://localhost:3000
     restart: unless-stopped
