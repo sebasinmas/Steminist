@@ -6,6 +6,7 @@ import Card from '../common/Card';
 import Tag from '../common/Tag';
 import Button from '../common/Button';
 import { StarIcon, BriefcaseIcon, UsersIcon, CalendarIcon, GlobeAltIcon, HeartIcon, ChevronDownIcon } from '../common/Icons';
+import { Avatar } from '../common/Avatar';
 
 const CircularProgress: React.FC<{ percentage: number }> = ({ percentage }) => {
     const radius = 28;
@@ -83,7 +84,7 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, matchDetails }) => {
             <div className="flex-grow cursor-pointer" onClick={handleNavigate}>
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start space-x-4 flex-grow pr-4 min-w-0">
-                        <img src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+                        <Avatar src={mentor.avatarUrl} alt={mentor.name} className="w-16 h-16 flex-shrink-0" />
                         <div className="pt-1 flex-1 min-w-0">
                             <h3 className="text-xl font-bold break-words">{mentor.name}</h3>
                             <p className="text-primary break-words">{mentor.title}</p>

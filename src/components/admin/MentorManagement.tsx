@@ -3,6 +3,7 @@ import type { Mentor } from '../../types';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import { useToast } from '../../context/ToastContext';
+import { Avatar } from '../common/Avatar';
 
 interface MentorManagementProps {
     mentors: Mentor[];
@@ -64,7 +65,7 @@ const MentorManagement: React.FC<MentorManagementProps> = ({ mentors, mentorMent
                                         className="flex items-center space-x-4 mb-4 sm:mb-0 flex-grow cursor-pointer"
                                         onClick={() => onViewDetails(mentor)}
                                     >
-                                        <img src={mentor.avatarUrl} alt={mentor.name} className="w-12 h-12 rounded-full" />
+                                        <Avatar src={mentor.avatarUrl} alt={mentor.name} className="w-12 h-12" />
                                         <div>
                                             <p className="font-bold">{mentor.name}</p>
                                             <p className="text-sm text-muted-foreground">{mentor.title}</p>

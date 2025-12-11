@@ -128,7 +128,7 @@ function buildAdminUserFromRow(row: any): AdminUser {
         name: fullName,
         email: row.email,
         role: 'admin',
-        avatarUrl: row.avatar_url || 'https://via.placeholder.com/150',
+        avatarUrl: row.avatar_url || null,
         interests: [],
         company: '',
         title: '',
@@ -150,7 +150,7 @@ function buildMentorUser(base: any, profile: any | null): Mentor {
         last_name: lastName,
         email: base.email,
         role: 'mentor',
-        avatarUrl: base.avatar_url || 'https://via.placeholder.com/150',
+        avatarUrl: base.avatar_url || null,
 
         interests: profile?.interests ?? [],
         availability: {},
@@ -187,7 +187,7 @@ function buildMenteeUser(base: any, profile: any | null): Mentee {
         last_name: lastName,
         email: base.email,
         role: 'mentee',
-        avatarUrl: base.avatar_url || 'https://via.placeholder.com/150',
+        avatarUrl: base.avatar_url || null,
 
         interests: profile?.interests ?? [],
         availability: {},
@@ -260,7 +260,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: sessionUser.id,
             name: metadata.name || sessionUser.email?.split('@')[0] || 'User',
             email: sessionUser.email || '',
-            avatarUrl: metadata.avatarUrl || 'https://via.placeholder.com/150',
+            avatarUrl: metadata.avatarUrl || null,
             interests: metadata.interests || [],
             availability: metadata.availability || {},
         };

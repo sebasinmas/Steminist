@@ -15,7 +15,6 @@ import AnalyticsCharts from '../components/admin/AnalyticsCharts';
 import Tooltip from '../components/common/Tooltip';
 import SupportTicketCard from '../components/admin/SupportTicketCard';
 
-
 interface AdminDashboardPageProps {
     mentorships: Mentorship[];
     requests: ConnectionRequest[];
@@ -44,8 +43,16 @@ const SectionTitle: React.FC<{ title: string; tooltipText: string; count?: numbe
     </div>
 );
 
-
-const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, requests, mentors, mentees, updateConnectionStatus, updateMentorMaxMentees, supportTickets, updateSupportTicketStatus }) => {
+const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
+    mentorships,
+    requests,
+    mentors,
+    mentees,
+    updateConnectionStatus,
+    updateMentorMaxMentees,
+    supportTickets,
+    updateSupportTicketStatus
+}) => {
 
     const [selectedMentorForDetails, setSelectedMentorForDetails] = useState<Mentor | null>(null);
     const [selectedMenteeForDetails, setSelectedMenteeForDetails] = useState<Mentee | null>(null);
@@ -56,19 +63,34 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
 
     const allSessions = useMemo(() => mentorships.flatMap(m => m.sessions), [mentorships]);
 
+    // AJUSTE: usar todas las mentoreadas y rating de mentoras
     const metrics = useMemo(() => {
-        const completedSessions = allSessions.filter(s => s.status === 'completed' && s.rating);
-        const totalRatings = completedSessions.reduce((acc, s) => acc + (s.rating || 0), 0);
-        const avgRating = completedSessions.length > 0 ? (totalRatings / completedSessions.length).toFixed(2) : 'N/A';
-        const uniqueMentees = new Set(mentorships.map(m => m.mentee.id)).size;
+        // Mentorías activas y completadas
+        const activeMentorships = mentorships.filter(m => m.status === 'active').length;
+        const completedMentorships = mentorships.filter(m => m.status === 'completed').length;
+
+        // Total de mentoreadas registradas (todas las que llegan por props)
+        const totalMentees = mentees.length;
+
+        // Calificación promedio de mentoras (promedio simple de average_rating)
+        const mentorsWithRating = mentors.filter(m => (m.rating || 0) > 0);
+        let avgRating = 'N/A';
+
+        if (mentorsWithRating.length > 0) {
+            const totalRating = mentorsWithRating.reduce(
+                (sum, m) => sum + (m.rating || 0),
+                0
+            );
+            avgRating = (totalRating / mentorsWithRating.length).toFixed(2);
+        }
 
         return {
-            totalMentees: uniqueMentees,
-            activeMentorships: mentorships.filter(m => m.status === 'active').length,
-            completedMentorships: mentorships.filter(m => m.status === 'completed').length,
-            avgRating: avgRating,
+            totalMentees,
+            activeMentorships,
+            completedMentorships,
+            avgRating
         };
-    }, [mentorships, allSessions]);
+    }, [mentorships, mentees, mentors, allSessions]);
 
     const allMenteesWithStats = useMemo(() => {
         const menteeMap = new Map<number | string, { mentee: Mentee, active: number, completed: number }>();
@@ -134,10 +156,26 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
                     <div className="space-y-8">
                         <SectionTitle title="Métricas" tooltipText={tabTooltips["Métricas"]} />
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <MetricsCard title="Total de Mentoreadas" value={metrics.totalMentees.toString()} icon={<UsersIcon className="w-8 h-8" />} />
-                            <MetricsCard title="Mentorías Activas" value={metrics.activeMentorships.toString()} icon={<BriefcaseIcon className="w-8 h-8" />} />
-                            <MetricsCard title="Mentorías Completadas" value={metrics.completedMentorships.toString()} icon={<TrendingUpIcon className="w-8 h-8" />} />
-                            <MetricsCard title="Calificación Promedio" value={metrics.avgRating} icon={<StarIcon className="w-8 h-8" />} />
+                            <MetricsCard
+                                title="Total de Mentoreadas"
+                                value={metrics.totalMentees.toString()}
+                                icon={<UsersIcon className="w-8 h-8" />}
+                            />
+                            <MetricsCard
+                                title="Mentorías Activas"
+                                value={metrics.activeMentorships.toString()}
+                                icon={<BriefcaseIcon className="w-8 h-8" />}
+                            />
+                            <MetricsCard
+                                title="Mentorías Completadas"
+                                value={metrics.completedMentorships.toString()}
+                                icon={<TrendingUpIcon className="w-8 h-8" />}
+                            />
+                            <MetricsCard
+                                title="Calificación Promedio"
+                                value={metrics.avgRating}
+                                icon={<StarIcon className="w-8 h-8" />}
+                            />
                         </div>
                         <AnalyticsCharts
                             mentorships={mentorships}
@@ -153,11 +191,18 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
                         <SectionTitle title="Solicitudes" tooltipText={tabTooltips["Solicitudes"]} />
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div>
-                                <h3 className="text-xl font-semibold mb-4 text-foreground/80">Solicitudes de Mentoría Pendientes ({pendingRequests.length})</h3>
+                                <h3 className="text-xl font-semibold mb-4 text-foreground/80">
+                                    Solicitudes de Mentoría Pendientes ({pendingRequests.length})
+                                </h3>
                                 {pendingRequests.length > 0 ? (
                                     <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                                         {pendingRequests.map(req => (
-                                            <AdminRequestCard key={req.id} request={req} onStatusChange={updateConnectionStatus} mentorCurrentMentees={mentorMenteesCount[req.mentor.id] || 0} />
+                                            <AdminRequestCard
+                                                key={req.id}
+                                                request={req}
+                                                onStatusChange={updateConnectionStatus}
+                                                mentorCurrentMentees={mentorMenteesCount[req.mentor.id] || 0}
+                                            />
                                         ))}
                                     </div>
                                 ) : (
@@ -165,7 +210,9 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
                                 )}
                             </div>
                             <div>
-                                <h3 className="text-xl font-semibold mb-4 text-foreground/80">Solicitudes de Terminación ({terminationRequests.length})</h3>
+                                <h3 className="text-xl font-semibold mb-4 text-foreground/80">
+                                    Solicitudes de Terminación ({terminationRequests.length})
+                                </h3>
                                 {terminationRequests.length > 0 ? (
                                     <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                                         {terminationRequests.map(m => (
@@ -175,7 +222,9 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
                                                 {m.terminationReason && (
                                                     <div className="mt-2 pt-2 border-t border-border">
                                                         <h4 className="font-semibold text-sm mb-1">Razón para la Terminación:</h4>
-                                                        <p className="text-sm text-foreground/80 bg-secondary p-2 rounded-md italic">"{m.terminationReason}"</p>
+                                                        <p className="text-sm text-foreground/80 bg-secondary p-2 rounded-md italic">
+                                                            "{m.terminationReason}"
+                                                        </p>
                                                     </div>
                                                 )}
                                                 <div className="flex gap-2 mt-4">
@@ -192,7 +241,9 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
                             </div>
                         </div>
                         <div className="mt-12">
-                            <h3 className="text-xl font-semibold mb-4 text-foreground/80">Consultas de Soporte ({openSupportTickets.length})</h3>
+                            <h3 className="text-xl font-semibold mb-4 text-foreground/80">
+                                Consultas de Soporte ({openSupportTickets.length})
+                            </h3>
                             {openSupportTickets.length > 0 ? (
                                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                                     {openSupportTickets.map(ticket => (
@@ -234,16 +285,28 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ mentorships, re
 
                 {activeTab === "Mentorías Activas" && (
                     <div>
-                        <SectionTitle title="Mentorías Activas" tooltipText={tabTooltips["Mentorías Activas"]} count={metrics.activeMentorships} />
+                        <SectionTitle
+                            title="Mentorías Activas"
+                            tooltipText={tabTooltips["Mentorías Activas"]}
+                            count={metrics.activeMentorships}
+                        />
                         <div className="space-y-4">
                             {mentorships.filter(m => m.status === 'active').map(m => (
                                 <Card key={m.id} className="p-4 flex justify-between items-center">
                                     <div>
                                         <p><strong>Mentora:</strong> {m.mentor.name}</p>
                                         <p><strong>Mentoreada:</strong> {m.mentee.name}</p>
-                                        <p className="text-sm text-muted-foreground">Progreso: {m.sessions.filter(s => s.status === 'completed').length} de 3 sesiones completadas</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Progreso: {m.sessions.filter(s => s.status === 'completed').length} de 3 sesiones completadas
+                                        </p>
                                     </div>
-                                    <Button size="sm" variant="secondary" onClick={() => setSelectedMentorshipForDetails(m)}>Ver Detalles</Button>
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => setSelectedMentorshipForDetails(m)}
+                                    >
+                                        Ver Detalles
+                                    </Button>
                                 </Card>
                             ))}
                         </div>
