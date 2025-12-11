@@ -27,8 +27,6 @@ import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketSt
 import { mentorService } from './services/mentorService';
 import { getConnectionRequestsForMentor, getPendingSessionsForUser } from './services/notificationService';
 import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService, completeSessionWithSurvey } from './services/mentorshipService';
-
-import { fetchMentorships, fetchMentees, updateSessionStatus as updateSessionService } from './services/mentorshipService';
 import { mentorshipAdminService } from './services/mentorshipAdminService';
 
 const App: React.FC = () => {
