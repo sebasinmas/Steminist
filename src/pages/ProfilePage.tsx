@@ -381,6 +381,48 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                 }
             }
 
+            // 3) Actualizar papers (publicaciones y enlaces) solo para mentoras
+            if (isMentor) {
+                const mentor = profileData as Mentor;
+                const links = mentor.links || [];
+
+                console.log('[ProfilePage] Updating papers rows', {
+                    userId,
+                    links,
+                });
+
+                // Borrar papers anteriores de esta usuaria
+                const { error: delPapersErr } = await supabase
+                    .from('papers')
+                    .delete()
+                    .eq('user_id', userId);
+
+                if (delPapersErr) {
+                    console.error('[ProfilePage] Error deleting old papers', delPapersErr);
+                    throw delPapersErr;
+                }
+
+                // Insertar nuevos papers si hay enlaces
+                if (links.length > 0) {
+                    const rowsToInsert = links.map(link => ({
+                        user_id: userId,
+                        title: link.title || null,
+                        link: link.url || null,
+                    }));
+
+                    const { error: insPapersErr } = await supabase
+                        .from('papers')
+                        .insert(rowsToInsert);
+
+                    if (insPapersErr) {
+                        console.error('[ProfilePage] Error inserting papers', insPapersErr);
+                        throw insPapersErr;
+                    }
+                }
+
+                console.log('[ProfilePage] papers updated successfully');
+            }
+
             console.log('[ProfilePage] Calling refreshUser');
             await refreshUser();
             console.log('[ProfilePage] refreshUser done');
