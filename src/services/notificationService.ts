@@ -19,7 +19,7 @@ export const getConnectionRequestsForMentor = async (mentorId: string | number) 
                     mentor_profiles (title, company, max_mentees)
                 )
             `)
-            .eq('status', 'mentor_pending');
+            .eq('status', 'pending_mentor');
 
         if (error) throw error;
 
