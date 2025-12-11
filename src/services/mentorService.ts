@@ -148,13 +148,13 @@ export const mentorService = {
                 email: m.mentee.email,
                 avatarUrl: m.mentee.avatar_url || 'https://via.placeholder.com/150',
                 role: 'mentee',
-                title: m.mentee.mentee_profiles?.[0]?.title || '',
-                company: m.mentee.mentee_profiles?.[0]?.company || '',
-                bio: m.mentee.mentee_profiles?.[0]?.bio || '',
-                interests: m.mentee.mentee_profiles?.[0]?.interests || [],
-                mentorshipGoals: m.mentee.mentee_profiles?.[0]?.mentorship_goals || [],
-                pronouns: m.mentee.mentee_profiles?.[0]?.pronouns,
-                neurodivergence: m.mentee.mentee_profiles?.[0]?.neurodivergence_details,
+                title: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.title || '',
+                company: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.company || '',
+                bio: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.bio || '',
+                interests: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.interests || [],
+                mentorshipGoals: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.mentorship_goals || [],
+                pronouns: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.pronouns,
+                neurodivergence: (Array.isArray(m.mentee.mentee_profiles) ? m.mentee.mentee_profiles[0] : m.mentee.mentee_profiles)?.neurodivergence_details,
                 availability: {}
             }
         })) as Mentorship[];

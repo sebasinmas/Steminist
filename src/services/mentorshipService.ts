@@ -62,7 +62,8 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
             };
 
             // Map Mentee
-            const menteeProfile = item.mentee.mentee_profiles?.[0] || {};
+            const menteeProfileData = item.mentee.mentee_profiles;
+            const menteeProfile = Array.isArray(menteeProfileData) ? menteeProfileData[0] : (menteeProfileData || {});
             const mentee: Mentee = {
                 id: item.mentee.id,
                 name: `${item.mentee.first_name || ''} ${item.mentee.last_name || ''}`.trim(),
