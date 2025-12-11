@@ -26,7 +26,7 @@ import { fetchMentors, updateMentorMaxMentees as updateMentorService } from './s
 import { fetchMentorships, fetchMentees } from './services/mentorshipService';
 import { createSupportTicket, updateSupportTicketStatus as updateSupportTicketStatusService, fetchSupportTickets } from './services/supportService';
 import { mentorService } from './services/mentorService';
-import { getPendingSessionsForUser } from './services/notificationService';
+import { getConnectionRequestsForMentor, getPendingSessionsForUser } from './services/notificationService';
 
 const App: React.FC = () => {
     return (
@@ -99,6 +99,18 @@ const AppContent: React.FC = () => {
             }
         };
 
+        const loadConnectionRequests = async () => {
+            if (isLoggedIn && user && role === 'mentor') {
+                try {
+                    setConnectionRequests([]);
+                    const requests = await getConnectionRequestsForMentor(String(user.id));
+                    setConnectionRequests(requests);
+                } catch (error) {
+                    console.error("Failed to fetch connection requests:", error);
+                }
+            }
+        };
+
         const loadPendingSessions = async () => {
             if (isLoggedIn && user) {
                 try{
@@ -112,6 +124,8 @@ const AppContent: React.FC = () => {
                 }
             }
         }
+
+        loadConnectionRequests();
         loadPendingSessions();
         loadMentors();
         loadSupportTickets();
