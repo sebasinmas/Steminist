@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { Mentorship, Mentor, Mentee, Session, SessionStatus, MentorshipStatus, MentorSurvey } from '../types';
+import { ratingService } from './ratingService';
+
 
 export const fetchMentorships = async (): Promise<Mentorship[]> => {
     try {
@@ -322,6 +324,21 @@ export const completeSessionWithSurvey = async (
             }]);
 
         if (surveyError) throw surveyError;
+        // 3. Actualizar el rating de la mentora
+
+        const { data: relData } = await supabase
+             .from('sessions')
+             .select(`
+                mentorship:mentorships ( mentee_id )
+             `)
+             .eq('id', sessionId)
+             .single();
+        const menteeId = (relData?.mentorship as any)?.mentee_id;
+
+        if (menteeId) {
+            // Llamada asíncrona (no bloqueamos el retorno true)
+            ratingService.updateMenteeRating(menteeId); 
+        }
 
         return true;
     } catch (err) {
@@ -348,6 +365,21 @@ export const submitSessionFeedback = async (sessionId: number, rating: number, c
             console.error('Error submitting feedback:', error);
             throw error;
         }
+        // Actualizar el rating de la mentora
+        const { data: relData } = await supabase
+             .from('sessions')
+             .select(`
+                mentorship:mentorships ( mentor_id )
+             `)
+             .eq('id', sessionId)
+             .single();
+
+        const mentorId = (relData?.mentorship as any)?.mentor_id;
+
+        if (mentorId) {
+            ratingService.updateMentorRating(mentorId);
+        }
+
         return true;
     } catch (err) {
         console.error('Unexpected error submitting feedback:', err);
