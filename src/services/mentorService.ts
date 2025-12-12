@@ -6,7 +6,7 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews, max_mentees, expertise), availability_blocks(day_of_week, start_time, end_time), mentorships!mentor_id(id, status)')
+            .select('id, first_name, last_name, avatar_url, mentor_profiles(interests, mentorship_goals, bio, title, company, average_rating, total_reviews, max_mentees, expertise), availability_blocks(day_of_week, start_time, end_time, specific_date, is_recurring), mentorships!mentor_id(id, status)')
             .eq('role', 'mentor');
 
         if (error) {
@@ -32,14 +32,24 @@ export const fetchMentors = async (): Promise<Mentor[]> => {
             const availability: { [key: string]: string[] } = {};
             if (user.availability_blocks && Array.isArray(user.availability_blocks)) {
                 user.availability_blocks.forEach((block: any) => {
-                    const day = block.day_of_week.toLowerCase();
+                    // Key: fecha específica si existe, si no día recurrente
+                    const key =
+                        block.specific_date ||
+                        (block.is_recurring ? block.day_of_week?.toLowerCase() : null);
+
+                    if (!key) return;
+
                     const timeRange = `${block.start_time.slice(0, 5)}-${block.end_time.slice(0, 5)}`;
-                    if (!availability[day]) {
-                        availability[day] = [];
-                    }
-                    availability[day].push(timeRange);
+
+                    if (!availability[key]) availability[key] = [];
+                    availability[key].push(timeRange);
                 });
             }
+
+            // limpiar duplicados y ordenar
+            Object.keys(availability).forEach(k => {
+                availability[k] = Array.from(new Set(availability[k])).sort();
+            });
 
             // Calculate active mentees count
             const activeMenteesCount = user.mentorships
@@ -210,7 +220,7 @@ const getLocalDateString = (date: Date): string => {
 
 export const getMentorAvailability = async (mentorId: number | string): Promise<Record<string, string[]>> => {
     const startDate = new Date();
-    const endDate = addDays(startDate, 30); 
+    const endDate = addDays(startDate, 30);
 
     // 1. Obtener bloques (sin cambios)
     const { data: blocks, error: blocksError } = await supabase
@@ -226,8 +236,8 @@ export const getMentorAvailability = async (mentorId: number | string): Promise<
 
 
     const { data: existingSessions, error: sessionsError } = await supabase
-        .rpc('get_mentor_booked_slots', { 
-            target_mentor_id: mentorId 
+        .rpc('get_mentor_booked_slots', {
+            target_mentor_id: mentorId
         });
 
     if (sessionsError) {
@@ -239,20 +249,20 @@ export const getMentorAvailability = async (mentorId: number | string): Promise<
 
     if (existingSessions) {
         existingSessions.forEach((session: { scheduled_at: string }) => {
-      
+
             const dateObj = new Date(session.scheduled_at);
-            
+
 
             const year = dateObj.getUTCFullYear();
             const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
             const day = String(dateObj.getUTCDate()).padStart(2, '0');
             const dateKey = `${year}-${month}-${day}`;
-            
+
 
             const hour = String(dateObj.getUTCHours()).padStart(2, '0');
             const minute = String(dateObj.getUTCMinutes()).padStart(2, '0');
             const timeKey = `${hour}:${minute}`;
-            
+
             if (!bookedMap[dateKey]) bookedMap[dateKey] = [];
             bookedMap[dateKey].push(timeKey);
         });
@@ -261,9 +271,9 @@ export const getMentorAvailability = async (mentorId: number | string): Promise<
 
     for (let d = 0; d < 30; d++) {
         const currentDate = addDays(startDate, d);
-        const dateKey = getLocalDateString(currentDate); 
+        const dateKey = getLocalDateString(currentDate);
         const dayOfWeek = getDayOfWeekString(currentDate.getDay());
-        
+
         let daySlots: string[] = [];
 
         blocks?.forEach(block => {
@@ -276,10 +286,10 @@ export const getMentorAvailability = async (mentorId: number | string): Promise<
             }
 
             if (isMatch) {
-             
-                const startTime = block.start_time.slice(0, 5); 
-                
-               
+
+                const startTime = block.start_time.slice(0, 5);
+
+
                 const isBooked = bookedMap[dateKey]?.includes(startTime);
 
                 if (!isBooked) {

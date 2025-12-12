@@ -24,8 +24,17 @@ export const getNextDayDate = (dayName: string): Date => {
 };
 
 export const getDateObject = (dateStr: string): Date => {
-    const d = new Date(dateStr);
-    // Check if valid date string. "Invalid Date" has NaN time.
-    if (!isNaN(d.getTime())) return d;
+    // FIX: Si viene como YYYY-MM-DD, parsear como fecha local (evita corrimiento por timezone)
+    const isIsoDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+
+    if (isIsoDateOnly) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        // month - 1 porque Date usa 0-11
+        return new Date(y, m - 1, d);
+    }
+
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) return parsed;
+
     return getNextDayDate(dateStr);
 };
