@@ -18,7 +18,7 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                 ),
                 mentee:users!mentee_id(
                     id, first_name, last_name, email, role, avatar_url,
-                    mentee_profiles(title, company, bio, pronouns, neurodivergence_details, is_neurodivergent)
+                    mentee_profiles(title, company, bio, pronouns, neurodivergence_details, is_neurodivergent,mentorship_goals)
                 ),
                 sessions(
                     id,
@@ -89,7 +89,7 @@ export const fetchMentorships = async (): Promise<Mentorship[]> => {
                 bio: menteeProfile.bio || '',
                 title: menteeProfile.title || '',
                 company: menteeProfile.company || '',
-                mentorshipGoals: [], // Not fetched
+                mentorshipGoals: menteeProfile.mentorship_goals || [],
                 pronouns: menteeProfile.pronouns || '',
                 neurodivergence: menteeProfile.neurodivergence_details || '',
                 isNeurodivergent: menteeProfile.is_neurodivergent || false,
