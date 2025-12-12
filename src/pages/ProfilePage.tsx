@@ -279,21 +279,17 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
             const userId = user.id;
             let finalAvatarUrl = (profileData as any).avatarUrl;
 
-            // --- PASO CRÍTICO: Subir imagen real si existe un archivo seleccionado ---
+            // --- Subir imagen si existe archivo seleccionado ---
             if (selectedFile) {
-                console.log("Subiendo imagen al Storage...");
-                // Subimos el archivo y obtenemos la URL limpia de Supabase
+                console.log('Subiendo imagen al Storage...');
                 finalAvatarUrl = await storageService.uploadAvatar(userId, selectedFile);
             }
-            // -------------------------------------------------------------------------
 
             // Preparar nombres
-            const firstName =
-                (profileData as any).first_name ?? (user as any).first_name ?? '';
-            const lastName =
-                (profileData as any).last_name ?? (user as any).last_name ?? '';
+            const firstName = (profileData as any).first_name ?? (user as any).first_name ?? '';
+            const lastName = (profileData as any).last_name ?? (user as any).last_name ?? '';
 
-            // 1) Actualizar tabla 'users' con la URL correcta (no el base64)
+            // 1) Actualizar tabla 'users'
             console.log('[ProfilePage] Updating users row', {
                 userId,
                 firstName,
@@ -301,15 +297,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                 avatarUrl: finalAvatarUrl,
             });
 
-            const { data: usersData, error: userErr } = await supabase
+            const { error: userErr } = await supabase
                 .from('users')
                 .update({
                     first_name: firstName || null,
                     last_name: lastName || null,
                     avatar_url: finalAvatarUrl || null,
                 })
-                .eq('id', userId)
-                .select();
+                .eq('id', userId);
 
             if (userErr) {
                 console.error('[ProfilePage] Error updating users', userErr);
@@ -348,6 +343,38 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                     console.error('[ProfilePage] Error updating mentor_profiles', mentorErr);
                     throw mentorErr;
                 }
+
+                // 2.b) Persistir "Publicaciones y Enlaces" en tabla papers
+                const links = (mentor.links || []).filter(l => l.title && l.url);
+
+                // borrar existentes
+                const { error: delPapersErr } = await supabase
+                    .from('papers')
+                    .delete()
+                    .eq('user_id', userId);
+
+                if (delPapersErr) {
+                    console.error('[ProfilePage] Error deleting papers', delPapersErr);
+                    throw delPapersErr;
+                }
+
+                // insertar nuevos
+                if (links.length > 0) {
+                    const rows = links.map(l => ({
+                        user_id: userId,
+                        title: l.title,
+                        link: l.url,
+                    }));
+
+                    const { error: insPapersErr } = await supabase
+                        .from('papers')
+                        .insert(rows);
+
+                    if (insPapersErr) {
+                        console.error('[ProfilePage] Error inserting papers', insPapersErr);
+                        throw insPapersErr;
+                    }
+                }
             } else {
                 const mentee = profileData as Mentee;
 
@@ -382,10 +409,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
             console.log('[ProfilePage] refreshUser done');
 
             setIsEditing(false);
-            // Limpiamos el archivo seleccionado después de guardar con éxito
             setSelectedFile(null);
             addToast('Perfil actualizado con éxito.', 'success');
-
         } catch (rawErr) {
             const err = rawErr as any;
             console.error('[ProfilePage] Error in handleSave', err);
@@ -757,7 +782,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ isPublicView = false }) => {
                     )}
 
                     <TagEditor
-                        title="Áreas de Especialización"
+                        title={isMentor ? 'Areas de Especialización' : 'Intereses'}
                         tags={profileData.interests || []}
                         tagType="interests"
                         restrictedOptions={interestOptions}

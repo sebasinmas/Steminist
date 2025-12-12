@@ -1,27 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ConnectionRequest } from '../../types';
 import Button from '../common/Button';
 import Card from '../common/Card';
-import { useToast } from '../../context/ToastContext';
 import { Avatar } from '../common/Avatar';
 
 interface ConnectionRequestCardProps {
     request: ConnectionRequest;
-    onStatusChange: (requestId: number, newStatus: 'accepted' | 'rejected') => void;
+    onStatusChange: (requestId: number, newStatus: 'accepted' | 'rejected') => Promise<void>;
 }
 
 const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, onStatusChange }) => {
     const { mentee, motivationLetter } = request;
-    const { addToast } = useToast();
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleAccept = () => {
-        onStatusChange(request.id, 'accepted');
-        addToast(`Conexión con ${mentee.name} aceptada.`, 'success');
+    const handleAccept = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (submitting) return;
+
+        setSubmitting(true);
+        try {
+            await onStatusChange(request.id, 'accepted');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const handleDecline = () => {
-        onStatusChange(request.id, 'rejected');
-        addToast(`Conexión con ${mentee.name} rechazada.`, 'info');
+    const handleDecline = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (submitting) return;
+
+        setSubmitting(true);
+        try {
+            await onStatusChange(request.id, 'rejected');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -36,14 +51,22 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({ request, 
                         </p>
                     </div>
                 </div>
+
                 <div className="flex items-center space-x-2 self-start md:self-center flex-shrink-0">
-                    <Button onClick={handleAccept} size="sm" variant="primary">Aceptar</Button>
-                    <Button onClick={handleDecline} size="sm" variant="secondary">Rechazar</Button>
+                    <Button onClick={handleAccept} size="sm" variant="primary" disabled={submitting}>
+                        Aceptar
+                    </Button>
+                    <Button onClick={handleDecline} size="sm" variant="secondary" disabled={submitting}>
+                        Rechazar
+                    </Button>
                 </div>
             </div>
+
             <div className="mt-4 pt-4 border-t border-border">
                 <h4 className="font-semibold text-sm mb-2">Detalles de la Solicitud:</h4>
-                <p className="text-sm text-foreground/80 bg-secondary p-3 rounded-md italic whitespace-pre-line">{motivationLetter}</p>
+                <p className="text-sm text-foreground/80 bg-secondary p-3 rounded-md italic whitespace-pre-line">
+                    {motivationLetter}
+                </p>
             </div>
         </Card>
     );
